@@ -12,13 +12,7 @@ export default function AboutUs() {
       </header>
       {/* Hero Image */}
       <div className="relative w-full h-[250px]">
-        <Image
-          src="/gym.PNG"
-          alt="About Us"
-          className="object-cover"
-          priority
-          fill
-        />
+        <Image src="/gym.PNG" alt="About Us" priority fill />
       </div>
 
       {/* Intro Section */}
