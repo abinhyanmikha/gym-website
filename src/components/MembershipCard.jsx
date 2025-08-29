@@ -20,7 +20,7 @@ export default function MembershipCard({
 
       {/* Price */}
       <p className="text-2xl sm:text-3xl font-bold mb-4 text-center">
-        {/* RS {price,toLocaleString()}   */}
+        RS {Number(price).toLocaleString()} / {duration}
       </p>
 
       {/* Features */}
@@ -33,7 +33,10 @@ export default function MembershipCard({
       )}
 
       {/* Button */}
-      <button className="w-full bg-blue-600 text-white py-2 rounded-xl hover:bg-blue-700 transition">
+      <button
+        className="w-full bg-blue-600 text-white py-2 rounded-xl hover:bg-blue-700 transition"
+        onClick={() => (window.location.href = `/checkout?plan=${title}`)}
+      >
         Choose Plan
       </button>
     </div>

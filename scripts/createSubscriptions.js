@@ -1,7 +1,7 @@
 import "dotenv/config";
 
-import dbConnect from "../lib/mongodb.js";
-import Subscription from "../models/Subscription.js";
+import dbConnect from "../src/lib/mongodb.js";
+import Subscription from "../src/models/Subscription.js";
 
 const plans = [
   {
@@ -84,13 +84,16 @@ const plans = [
 async function initSubscriptions() {
   try {
     await dbConnect();
-    const existingPlans = await Subscription.find({});
-    if (existingPlans.length === 0) {
-      await Subscription.insertMany(plans);
-      console.log("Subscription plans initialized.");
-    } else {
-      console.log("Subscription plans already exist. No action taken.");
+    for (const plan of plans) {
+      const exists = await Subscription.findOne({ name: plan.name });
+      if (!exists) {
+        await Subscription.create(plan);
+        console.log(`Created plan: ${plan.name}`);
+      } else {
+        console.log(`Plan already exists: ${plan.name}`);
+      }
     }
+    console.log("Subscription plans initialization complete.");
   } catch (error) {
     console.error("Error initializing subscription plans:", error);
   }
