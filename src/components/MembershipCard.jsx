@@ -1,7 +1,14 @@
 // src/components/MembershipCard.jsx
 "use client";
 
-export default function MembershipCard({ title, features, price, color }) {
+export default function MembershipCard({
+  title,
+  features,
+  price,
+  color,
+  duration,
+  onChoose,
+}) {
   return (
     <div
       className={`bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition border-t-4 ${color}`}
@@ -13,7 +20,7 @@ export default function MembershipCard({ title, features, price, color }) {
 
       {/* Price */}
       <p className="text-2xl sm:text-3xl font-bold mb-4 text-center">
-        RS {price} / month
+        {/* RS {price,toLocaleString()}   */}
       </p>
 
       {/* Features */}
