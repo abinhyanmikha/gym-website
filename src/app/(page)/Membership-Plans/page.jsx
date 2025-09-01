@@ -1,4 +1,5 @@
 "use client";
+
 import MembershipCard from "@/components/MembershipCard";
 import { useEffect, useState } from "react";
 
