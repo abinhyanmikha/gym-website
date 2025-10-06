@@ -1,22 +1,36 @@
 import { NextResponse } from "next/server";
-import connectDB from "@/lib/db";
-import User from "../../../../models/User";
+import bcrypt from "bcryptjs";
+import connectDB from "@/lib/mongodb";
+import User from "@/models/User";
 
 export async function POST(req) {
+  console.log("✅ /api/login HIT"); // debug log
   try {
-    await connectDB();
     const { email, password } = await req.json();
+    console.log("Login attempt:", email);
 
+    // Connect to MongoDB
+    await connectDB();
+    
     const user = await User.findOne({ email });
-    if (!user || user.password !== password) {
-      return NextResponse.json(
-        { error: "Invalid credentials" },
-        { status: 401 }
-      );
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
-
-    return NextResponse.json({ message: "Login successful", user });
-  } catch (err) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    
+    const validPassword = await bcrypt.compare(password, user.password);
+    if (!validPassword) {
+      return NextResponse.json({ error: "Invalid password" }, { status: 401 });
+    }
+    
+    return NextResponse.json(
+      {
+        message: "Login successful",
+        user: { id: user._id, email: user.email, name: user.name, role: user.role },
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Login error:", error);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

@@ -1,92 +1,83 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSession, signIn } from "next-auth/react";
 
-export default function Checkout() {
-  const searchParams = useSearchParams();
-  const planName = searchParams.get("plan");
-
+export default function Checkout({ planId }) {
+  const { data: session } = useSession();
   const [plan, setPlan] = useState(null);
   const [txnId, setTxnId] = useState("");
-  const [signature, setSignature] = useState("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function setup() {
-      // 1) Get plan
-      const res = await fetch("/api/subscription");
-      const plans = await res.json();
-      const selected = plans.find((p) => p.name === planName);
-      if (!selected) return;
-      // ensure price is a number (no commas)
-      const price = Number(String(selected.price).replace(/,/g, ""));
-      setPlan({ ...selected, price });
-
-      // 2) Make a unique transaction id
-      const id = `txn_${Date.now()}`;
-      setTxnId(id);
-
-      // 3) Ask server for signature of ONLY the 3 fields
-      const sigRes = await fetch("/api/esewa/sign", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          total_amount: price,
-          transaction_uuid: id,
-          product_code: "EPAYTEST",
-        }),
-      });
-
-      if (!sigRes.ok) {
-        console.error("Failed to fetch signature");
+      if (!session) {
+        alert("You must be logged in to checkout.");
+        signIn();
         return;
       }
-      const { signature } = await sigRes.json();
-      setSignature(signature);
+
+      try {
+        // 1️⃣ Fetch plan info
+        const res = await fetch("/api/subscription");
+        const plans = await res.json();
+        const selected = plans.find((p) => p._id === planId);
+        if (!selected) return alert("Plan not found");
+
+        setPlan(selected);
+
+        // 2️⃣ Generate transaction ID
+        const transaction_uuid = `txn_${Date.now()}`;
+        setTxnId(transaction_uuid);
+
+        // 3️⃣ Store pending payment in DB
+        await fetch("/api/payment/store", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: session.user.id,
+            subscriptionId: selected._id,
+            subscriptionName: selected.name,
+            amount: selected.price,
+            transactionId: transaction_uuid,
+            status: "pending",
+          }),
+        });
+
+        setLoading(false);
+      } catch (err) {
+        console.error("Checkout setup failed:", err);
+        alert("Failed to setup checkout.");
+      }
     }
 
-    if (planName) setup();
-  }, [planName]);
+    if (planId) setup();
+  }, [planId, session]);
 
-  if (!plan || !txnId || !signature) return <div>Loading...</div>;
+  if (loading) return <div className="text-center mt-10">Loading...</div>;
+  if (!plan) return <div className="text-center mt-10">Plan not found.</div>;
 
   return (
     <form
       action="https://rc-epay.esewa.com.np/api/epay/main/v2/form"
       method="POST"
     >
-      {/* Required by eSewa */}
-      <input type="hidden" name="amount" value={plan.price} />
-      <input type="hidden" name="tax_amount" value="0" />
-      <input type="hidden" name="product_service_charge" value="0" />
-      <input type="hidden" name="product_delivery_charge" value="0" />
-
-      <input type="hidden" name="total_amount" value={plan.price} />
-      <input type="hidden" name="transaction_uuid" value={txnId} />
-      <input type="hidden" name="product_code" value="EPAYTEST" />
-
-      {/* Signed fields MUST match the server signing string */}
+      <input type="hidden" name="amt" value={plan.price} />
+      <input type="hidden" name="pid" value={txnId} />
+      <input type="hidden" name="scd" value="EPAYTEST" />
       <input
         type="hidden"
-        name="signed_field_names"
-        value="total_amount,transaction_uuid,product_code"
-      />
-      <input type="hidden" name="signature" value={signature} />
-
-      {/* Redirect URLs */}
-      <input
-        type="hidden"
-        name="success_url"
-        value={`http://localhost:3000/payment-success?amt=${plan.price}&pid=${txnId}&rid=EPAYTEST`}
+        name="su"
+        value={`http://localhost:3000/payment-success?subscriptionId=${plan._id}&userId=${session.user.id}&subscriptionName=${plan.name}&amt=${plan.price}&pid=${txnId}`}
       />
       <input
         type="hidden"
-        name="failure_url"
-        value="http://localhost:3000/payment-failure"
+        name="fu"
+        value={`http://localhost:3000/payment-failure?subscriptionId=${plan._id}&userId=${session.user.id}&subscriptionName=${plan.name}&amt=${plan.price}&pid=${txnId}`}
       />
 
       <button
         type="submit"
-        className="w-full bg-green-600 text-white py-2 rounded-xl hover:bg-green-700 transition"
+        className="mt-6 w-full bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded"
       >
         Pay with eSewa
       </button>

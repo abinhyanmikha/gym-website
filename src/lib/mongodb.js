@@ -1,24 +1,63 @@
 import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI; //uniform resource identifier-tells how to connect to the database
+// MongoDB URI
+const MONGODB_URI = process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
-  throw new Error(
-    "Please define the MONGODB_URI environment variable inside .env.local"
-  );
+  throw new Error("Please define the MONGODB_URI environment variable inside .env.local");
 }
-if (!global.mongoose) {
-  global.mongoose = { conn: null, promise: null }; // conn store actual db connection promise store pending connectiion promise
-}
+
+// Global mongoose connection cache
 let cached = global.mongoose;
 
-export default async function dbConnect() {
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
+}
+
+async function dbConnect() {
+  // If we have an existing connection, return it
   if (cached.conn) {
     return cached.conn;
   }
+  
+  // If we don't have a connection promise yet, create one
   if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI, { bufferCommands: false }); //bufferCommands: false to prevent mongoose from buffering commands if not connected before conn established wont queue
+    const opts = {
+      bufferCommands: false,
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
+      family: 4, // Use IPv4, skip trying IPv6
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    };
+
+    cached.promise = mongoose.connect(MONGODB_URI, opts)
+      .then((mongoose) => {
+        console.log("MongoDB connected successfully");
+        return mongoose;
+      })
+      .catch(err => {
+        console.error("MongoDB connection error:", err);
+        cached.promise = null;
+        throw err;
+      });
   }
-  cached.conn = await cached.promise;
-  return cached.conn;
+  
+  try {
+    cached.conn = await cached.promise;
+    return cached.conn;
+  } catch (error) {
+    console.error("MongoDB connection failed:", error);
+    cached.promise = null; // Reset promise on error
+    throw error;
+  }
 }
+
+// Consistent connectDB function for use throughout the application
+export async function connectDB() {
+  return await dbConnect();
+}
+
+// Export the connect function as default
+export default dbConnect;

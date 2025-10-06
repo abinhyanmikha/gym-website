@@ -1,52 +1,49 @@
 "use client";
-
-import MembershipCard from "@/components/MembershipCard";
 import { useEffect, useState } from "react";
+import MembershipCard from "@/components/MembershipCard";
 
-export default function MembershipPlans() {
-  const [plans, setPlans] = useState([]);
+export default function MembershipPlansPage() {
+  const [plans, setPlans] = useState([]); // ✅ initialize as array
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch subscription plans from the API
-    async function fetchPlans() {
+    const fetchPlans = async () => {
       try {
         const res = await fetch("/api/subscription");
         const data = await res.json();
-        console.log("fetched plan", data);
-        setPlans(data);
+
+        if (Array.isArray(data)) {
+          setPlans(data);
+        } else {
+          console.error("Unexpected API response:", data);
+          setPlans([]); // fallback to empty array
+        }
       } catch (error) {
         console.error("Error fetching plans:", error);
+      } finally {
+        setLoading(false);
       }
-    }
+    };
+
     fetchPlans();
   }, []);
 
-  return (
-    <div className="w-screen bg-gray-100 py-10 px-4">
-      <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-center">
-        AJIMA Physical Fitness Membership Plans
-      </h1>
-      <p className="text-center mt-4 text-base sm:text-lg">
-        Choose the plan that suits you best and start your fitness journey
-        today!
-      </p>
+  if (loading) return <p>Loading plans...</p>;
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-6xl mx-auto mt-8">
-        {plans.length > 0 ? (
-          plans.map((plan) => (
-            <MembershipCard
-              key={plan._id}
-              title={plan.name}
-              features={plan.features}
-              price={plan.price}
-              color={plan.color || "border-t-4 border-blue-500"}
-              duration={plan.duration}
-            />
-          ))
-        ) : (
-          <p className="text-center col-span-full">Loading plans...</p>
-        )}
-      </div>
+  return (
+    <div className="container mx-auto px-4 py-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {plans.map((plan) => (
+        <MembershipCard
+          key={plan._id}
+          subscriptionId={plan._id}
+          title={plan.name}
+          price={plan.price}
+          duration={plan.duration}
+          features={plan.features}
+          includesCardio={plan.includesCardio}
+          color="border-blue-500"
+        />
+      ))}
     </div>
   );
 }

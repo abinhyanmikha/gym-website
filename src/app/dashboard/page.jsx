@@ -1,8 +1,18 @@
-export default function Dashboard() {
-  return (
-    <div className="w-full h-screen flex flex-col justify-center items-center bg-gray-100">
-      <h1 className="text-4xl font-bold mb-4">Welcome to your Dashboard!</h1>
-      <p className="text-gray-700">This is a protected area after login.</p>
-    </div>
-  );
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { redirect } from "next/navigation";
+
+export default async function DashboardPage() {
+  const session = await getServerSession(authOptions);
+
+  if (!session) {
+    redirect("/login");
+  }
+
+  // Redirect based on user role
+  if (session.user.role === "admin") {
+    redirect("/dashboard/admin");
+  } else {
+    redirect("/dashboard/user");
+  }
 }

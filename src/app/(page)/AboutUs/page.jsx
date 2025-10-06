@@ -6,7 +6,7 @@ import Image from "next/image";
 
 export default function AboutUs() {
   return (
-    <div className="w-screen bg-fuchsia-400">
+    <div className="w-screen bg-gray-100">
       <header>
         <Navbar />
       </header>
@@ -49,7 +49,7 @@ export default function AboutUs() {
       </div>
 
       {/* Mission Section */}
-      <div className="bg-blue-700 mt-4 p-6">
+      <div className="bg-blue-600 mt-4 p-6 rounded-lg">
         <h2 className="text-2xl sm:text-3xl font-bold text-center">
           Our Mission
         </h2>
@@ -84,7 +84,7 @@ export default function AboutUs() {
           </p>
         </div>
 
-        <div className="w-full lg:w-1/2 bg-black p-4">
+        <div className="w-full lg:w-1/2 bg-gray-200 p-4 rounded-lg">
           <ServiceCards />
         </div>
       </section>
