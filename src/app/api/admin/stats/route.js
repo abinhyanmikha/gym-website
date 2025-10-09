@@ -1,9 +1,9 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 
-import connectDB from "@/lib/mongodb";
+import { connectDB } from "@/lib/mongodb";
 import User from "@/models/User";
-import Subscription from "@/models/Subscription";
+import UserSubscription from "@/models/UserSubscription";
 import Payment from "@/models/Payment";
 
 export async function GET(request) {
@@ -22,11 +22,15 @@ export async function GET(request) {
 
     // Calculate stats from MongoDB
     const totalUsers = await User.countDocuments();
-    const totalSubscriptions = await Subscription.countDocuments();
+    
+    // Count active subscriptions (user subscriptions that are currently active)
+    const activeSubscriptions = await UserSubscription.countDocuments({ 
+      status: "active" 
+    });
 
-    // Calculate total revenue from completed payments
+    // Calculate total revenue from successful payments
     const revenueResult = await Payment.aggregate([
-      { $match: { status: "completed" } },
+      { $match: { status: "success" } }, // Changed from "completed" to "success" to match our payment status
       { $group: { _id: null, total: { $sum: "$amount" } } },
     ]);
     const totalRevenue = revenueResult.length > 0 ? revenueResult[0].total : 0;
@@ -34,7 +38,7 @@ export async function GET(request) {
     return new Response(
       JSON.stringify({
         totalUsers,
-        totalSubscriptions,
+        activeSubscriptions,
         totalRevenue,
       }),
       {

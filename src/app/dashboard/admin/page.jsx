@@ -159,7 +159,7 @@ export default function AdminDashboardPage() {
           </div>
           <div className="bg-purple-100 p-4 rounded-lg shadow">
             <h2 className="text-lg font-semibold mb-2">Total Revenue</h2>
-            <p className="text-3xl font-bold">${stats.totalRevenue}</p>
+            <p className="text-3xl font-bold">Rs. {stats.totalRevenue.toLocaleString()}</p>
           </div>
         </div>
       )}
