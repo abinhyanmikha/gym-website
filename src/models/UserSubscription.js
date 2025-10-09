@@ -7,6 +7,10 @@ const UserSubscriptionSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+    subscriptionId: {
+      type: String,
+      required: false, // Add subscription ID reference
+    },
     plan: {
       type: String,
       required: true, // e.g., "monthly", "yearly", etc.
@@ -19,6 +23,12 @@ const UserSubscriptionSchema = new mongoose.Schema(
       type: String,
       required: true,
       unique: true, // Esewa refId
+    },
+    transaction_uuid: {
+      type: String,
+      required: false,
+      unique: true,
+      sparse: true, // Allow null values but ensure uniqueness when present
     },
     status: {
       type: String,

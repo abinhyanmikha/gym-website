@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import UserSubscription from "@/models/UserSubscription";
 import Payment from "@/models/Payment";
+import User from "@/models/User";
+import { sendSubscriptionPurchaseEmail } from "@/lib/email";
 
 export async function POST(req) {
   try {
@@ -157,6 +159,7 @@ export async function POST(req) {
           plan: subscriptionName,
           amount: parseFloat(amount), // Ensure amount is a number
           transactionId: refId,
+          transaction_uuid: refId, // Use refId as transaction_uuid to match existing index
           status: "active",
           startDate: new Date(),
           endDate: new Date(Date.now() + durationInDays * 24 * 60 * 60 * 1000),
@@ -177,6 +180,25 @@ export async function POST(req) {
       }
 
       console.log("Subscription processed successfully:", subscription._id);
+      
+      // Send purchase confirmation email
+      try {
+        const user = await User.findById(userId);
+        if (user && user.email) {
+          await sendSubscriptionPurchaseEmail(user.email, {
+            subscriptionName,
+            amount: parseFloat(amount),
+            startDate: subscription.startDate,
+            endDate: subscription.endDate,
+            transactionId: refId
+          });
+          console.log("Purchase confirmation email sent to:", user.email);
+        }
+      } catch (emailError) {
+        console.error("Failed to send purchase confirmation email:", emailError);
+        // Don't fail the entire request if email fails
+      }
+      
       return NextResponse.json(
         { success: true, subscription },
         { status: 200 }

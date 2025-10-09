@@ -42,7 +42,7 @@ export async function POST(req) {
     const payment = await Payment.create({
       userId,
       subscriptionId,
-      description: `Payment for ${subscriptionName} subscription`,
+      subscriptionName,
       amount,
       refId: transactionId,
       status: status || "pending", // Use provided status or default to pending
