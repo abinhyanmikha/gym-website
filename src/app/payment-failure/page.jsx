@@ -1,8 +1,8 @@
 "use client";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 
-export default function PaymentFailure() {
+function PaymentFailureInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -51,5 +51,19 @@ export default function PaymentFailure() {
         Go Back to Plans
       </button>
     </div>
+  );
+}
+
+export default function PaymentFailure() {
+  return (
+    <Suspense
+      fallback={
+        <div className="w-screen h-screen flex justify-center items-center bg-red-100 px-4">
+          Loading...
+        </div>
+      }
+    >
+      <PaymentFailureInner />
+    </Suspense>
   );
 }

@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 
-export default function PaymentSuccess() {
+function PaymentSuccessInner() {
   const searchParams = useSearchParams();
   const refId = searchParams.get("pid"); // Changed from refId to pid to match what's being passed
   const amount = searchParams.get("amt"); // Changed from amount to amt to match what's being passed
@@ -102,5 +102,19 @@ export default function PaymentSuccess() {
         Go to Dashboard
       </a>
     </div>
+  );
+}
+
+export default function PaymentSuccess() {
+  return (
+    <Suspense
+      fallback={
+        <div className="w-screen h-screen flex justify-center items-center bg-green-100 px-4">
+          Loading...
+        </div>
+      }
+    >
+      <PaymentSuccessInner />
+    </Suspense>
   );
 }
