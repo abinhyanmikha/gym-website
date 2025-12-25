@@ -7,6 +7,7 @@ import LogoutButton from "@/components/LogoutButton";
 import DashboardNav from "@/components/DashboardNav";
 import UserModal from "@/components/admin/UserModal";
 import SubscriptionModal from "@/components/admin/SubscriptionModal";
+import { sortData, searchAndSort } from "@/lib/sorting";
 
 export default function AdminDashboardPage() {
   const { data: session, status } = useSession();
@@ -21,6 +22,12 @@ export default function AdminDashboardPage() {
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Sorting and search states
+  const [userSort, setUserSort] = useState({ key: 'name', direction: 'asc', type: 'string' });
+  const [paymentSort, setPaymentSort] = useState({ key: 'createdAt', direction: 'desc', type: 'date' });
+  const [subscriptionSort, setSubscriptionSort] = useState({ key: 'name', direction: 'asc', type: 'string' });
+  const [searchTerm, setSearchTerm] = useState('');
   
   // Modal states
   const [userModalOpen, setUserModalOpen] = useState(false);
@@ -38,6 +45,69 @@ export default function AdminDashboardPage() {
       redirect("/dashboard/user");
     }
   }, [status, session]);
+
+  // Sorting handler functions
+  const handleSort = (tableType, key, type = 'string') => {
+    console.log('handleSort called:', { tableType, key, type });
+    const currentSort = tableType === 'users' ? userSort : 
+                       tableType === 'payments' ? paymentSort : subscriptionSort;
+    
+    const newDirection = currentSort.key === key && currentSort.direction === 'asc' ? 'desc' : 'asc';
+    const newSort = { key, direction: newDirection, type };
+    
+    console.log('New sort config:', newSort);
+    
+    if (tableType === 'users') {
+      setUserSort(newSort);
+    } else if (tableType === 'payments') {
+      setPaymentSort(newSort);
+    } else {
+      setSubscriptionSort(newSort);
+    }
+  };
+
+  // Get sorted data with optimal algorithm selection
+  const getSortedUsers = () => {
+    console.log('getSortedUsers called:', { users: users.length, userSort, searchTerm });
+    if (!users || users.length === 0) return [];
+    
+    const algorithm = users.length > 1000 ? 'quickSort' : 'mergeSort';
+    const result = searchAndSort(users, searchTerm, ['name', 'email'], userSort, algorithm);
+    console.log('getSortedUsers result:', result.length);
+    return result;
+  };
+
+  const getSortedPayments = () => {
+    console.log('getSortedPayments called:', { payments: payments.length, paymentSort });
+    if (!payments || payments.length === 0) return [];
+    
+    const algorithm = payments.length > 1000 ? 'quickSort' : 'mergeSort';
+    const result = sortData(payments, paymentSort, algorithm);
+    console.log('getSortedPayments result:', result.length);
+    return result;
+  };
+
+  const getSortedSubscriptions = () => {
+    console.log('getSortedSubscriptions called:', { subscriptions: subscriptions.length, subscriptionSort });
+    if (!subscriptions || subscriptions.length === 0) return [];
+    
+    const algorithm = subscriptions.length > 100 ? 'quickSort' : 'mergeSort';
+    const result = sortData(subscriptions, subscriptionSort, algorithm);
+    console.log('getSortedSubscriptions result:', result.length);
+    return result;
+  };
+
+  // Sort icon component
+  const SortIcon = ({ column, currentSort }) => {
+    if (currentSort.key !== column) {
+      return <span className="ml-1 text-gray-400 cursor-pointer">↕</span>;
+    }
+    return (
+      <span className="ml-1 text-blue-600">
+        {currentSort.direction === 'asc' ? '↑' : '↓'}
+      </span>
+    );
+  };
 
   // Fetch dashboard data
   useEffect(() => {
@@ -64,7 +134,8 @@ export default function AdminDashboardPage() {
         const usersResponse = await fetch('/api/admin/users');
         if (usersResponse.ok) {
           const usersData = await usersResponse.json();
-          setUsers(usersData);
+          // Handle both old array format and new paginated format
+          setUsers(Array.isArray(usersData) ? usersData : usersData.users || []);
         } else {
           throw new Error('Failed to fetch users');
         }
@@ -74,7 +145,8 @@ export default function AdminDashboardPage() {
         const subscriptionsResponse = await fetch('/api/admin/subscriptions');
         if (subscriptionsResponse.ok) {
           const subscriptionsData = await subscriptionsResponse.json();
-          setSubscriptions(subscriptionsData);
+          // Handle both old array format and new paginated format
+          setSubscriptions(Array.isArray(subscriptionsData) ? subscriptionsData : subscriptionsData.plans || []);
         } else {
           throw new Error('Failed to fetch subscriptions');
         }
@@ -84,7 +156,8 @@ export default function AdminDashboardPage() {
         const paymentsResponse = await fetch('/api/admin/payments');
         if (paymentsResponse.ok) {
           const paymentsData = await paymentsResponse.json();
-          setPayments(paymentsData);
+          // Handle both old array format and new paginated format
+          setPayments(Array.isArray(paymentsData) ? paymentsData : paymentsData.payments || []);
         } else {
           throw new Error('Failed to fetch payments');
         }
@@ -185,22 +258,53 @@ export default function AdminDashboardPage() {
               </button>
             )}
           </div>
+          {activeTab === "users" && (
+            <div className="mb-4">
+              <input
+                type="text"
+                placeholder="Search users by name or email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          )}
           <div className="bg-gray-50 rounded-lg shadow overflow-hidden">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-100">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
+                  <th 
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-200"
+                    onClick={() => handleSort('users', 'name', 'string')}
+                  >
+                    Name <SortIcon column="name" currentSort={userSort} />
+                  </th>
+                  <th 
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-200"
+                    onClick={() => handleSort('users', 'email', 'email')}
+                  >
+                    Email <SortIcon column="email" currentSort={userSort} />
+                  </th>
+                  <th 
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-200"
+                    onClick={() => handleSort('users', 'role', 'string')}
+                  >
+                    Role <SortIcon column="role" currentSort={userSort} />
+                  </th>
+                  <th 
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-200"
+                    onClick={() => handleSort('users', 'createdAt', 'date')}
+                  >
+                    Joined <SortIcon column="createdAt" currentSort={userSort} />
+                  </th>
                   {activeTab === "users" && (
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   )}
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {users.length > 0 ? (
-                  users.map((user) => (
+                {getSortedUsers().length > 0 ? (
+                  getSortedUsers().map((user) => (
                     <tr key={user._id || user.id}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">{user.name}</div>
@@ -283,20 +387,44 @@ export default function AdminDashboardPage() {
                 Add New Plan
               </button>
           </div>
+          <div className="mb-4">
+            <input
+              type="text"
+              placeholder="Search subscription plans by name or features..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
           <div className="bg-gray-50 rounded-lg shadow overflow-hidden">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-100">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
+                  <th 
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-200"
+                    onClick={() => handleSort('subscriptions', 'name', 'string')}
+                  >
+                    Name <SortIcon column="name" currentSort={subscriptionSort} />
+                  </th>
+                  <th 
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-200"
+                    onClick={() => handleSort('subscriptions', 'price', 'number')}
+                  >
+                    Price <SortIcon column="price" currentSort={subscriptionSort} />
+                  </th>
+                  <th 
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-200"
+                    onClick={() => handleSort('subscriptions', 'duration', 'number')}
+                  >
+                    Duration <SortIcon column="duration" currentSort={subscriptionSort} />
+                  </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Features</th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {subscriptions.length > 0 ? (
-                  subscriptions.map((subscription) => (
+                {getSortedSubscriptions().length > 0 ? (
+                  getSortedSubscriptions().map((subscription) => (
                     <tr key={subscription._id || subscription.id}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">{subscription.name}</div>
@@ -371,20 +499,54 @@ export default function AdminDashboardPage() {
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold">Payment History</h2>
           </div>
+          <div className="mb-4">
+            <input
+              type="text"
+              placeholder="Search payments by user name or plan..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
           <div className="bg-gray-50 rounded-lg shadow overflow-hidden">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-100">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plan</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th 
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-200"
+                    onClick={() => handleSort('payments', 'userName', 'string')}
+                  >
+                    User <SortIcon column="userName" currentSort={paymentSort} />
+                  </th>
+                  <th 
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-200"
+                    onClick={() => handleSort('payments', 'planName', 'string')}
+                  >
+                    Plan <SortIcon column="planName" currentSort={paymentSort} />
+                  </th>
+                  <th 
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-200"
+                    onClick={() => handleSort('payments', 'amount', 'number')}
+                  >
+                    Amount <SortIcon column="amount" currentSort={paymentSort} />
+                  </th>
+                  <th 
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-200"
+                    onClick={() => handleSort('payments', 'createdAt', 'date')}
+                  >
+                    Date <SortIcon column="createdAt" currentSort={paymentSort} />
+                  </th>
+                  <th 
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-200"
+                    onClick={() => handleSort('payments', 'status', 'string')}
+                  >
+                    Status <SortIcon column="status" currentSort={paymentSort} />
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {payments.length > 0 ? (
-                  payments.map((payment) => (
+                {getSortedPayments().length > 0 ? (
+                  getSortedPayments().map((payment) => (
                     <tr key={payment._id || payment.id}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">{payment.userName || 'Unknown'}</div>

@@ -2,7 +2,7 @@ import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import User from "@/models/User";
-import { connectDB } from "@/lib/mongodb";
+import connectDB from "@/lib/mongodb";
 
 export const authOptions = {
   providers: [
@@ -27,11 +27,11 @@ export const authOptions = {
         );
         if (!isValid) throw new Error("Invalid password");
 
-        return { 
-          id: user._id.toString(), 
-          name: user.name, 
+        return {
+          id: user._id.toString(),
+          name: user.name,
           email: user.email,
-          role: user.role || "user" 
+          role: user.role || "user",
         };
       },
     }),
@@ -40,7 +40,7 @@ export const authOptions = {
     signIn: "/login",
     error: "/login",
   },
-  session: { 
+  session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },

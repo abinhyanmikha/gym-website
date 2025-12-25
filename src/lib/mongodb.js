@@ -1,13 +1,18 @@
+// src/lib/mongodb.js
 import mongoose from "mongoose";
 
-// MongoDB URI
 const MONGODB_URI = process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
-  throw new Error("Please define the MONGODB_URI environment variable inside .env.local");
+  throw new Error(
+    "Please define the MONGODB_URI environment variable inside .env.local"
+  );
 }
 
-// Global mongoose connection cache
+/**
+ * Global is used here to maintain a cached connection across hot reloads in development.
+ * This prevents creating multiple connections in Next.js dev environment.
+ */
 let cached = global.mongoose;
 
 if (!cached) {
@@ -15,49 +20,24 @@ if (!cached) {
 }
 
 async function dbConnect() {
-  // If we have an existing connection, return it
   if (cached.conn) {
     return cached.conn;
   }
-  
-  // If we don't have a connection promise yet, create one
+
   if (!cached.promise) {
-    const opts = {
-      bufferCommands: false,
-      maxPoolSize: 10,
-      serverSelectionTimeoutMS: 10000,
-      socketTimeoutMS: 45000,
-      family: 4, // Use IPv4, skip trying IPv6
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    };
-
-    cached.promise = mongoose.connect(MONGODB_URI, opts)
-      .then((mongoose) => {
-        console.log("MongoDB connected successfully");
-        return mongoose;
+    // Use new URL parser & unified topology options for stable connection
+    cached.promise = mongoose
+      .connect(MONGODB_URI, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+        bufferCommands: false, // Recommended for Next.js
       })
-      .catch(err => {
-        console.error("MongoDB connection error:", err);
-        cached.promise = null;
-        throw err;
-      });
+      .then((mongoose) => mongoose);
   }
-  
-  try {
-    cached.conn = await cached.promise;
-    return cached.conn;
-  } catch (error) {
-    console.error("MongoDB connection failed:", error);
-    cached.promise = null; // Reset promise on error
-    throw error;
-  }
-}
 
-// Consistent connectDB function for use throughout the application
-export async function connectDB() {
-  return await dbConnect();
+  cached.conn = await cached.promise;
+  return cached.conn;
 }
-
-// Export the connect function as default
+// Support both default and named imports across the codebase
 export default dbConnect;
+export { dbConnect as connectDB };

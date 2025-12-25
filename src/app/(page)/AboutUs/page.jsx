@@ -1,127 +1,112 @@
 "use client";
-import Footer from "@/components/Footer";
-import Navbar from "@/components/Navbar";
-import ServiceCards from "@/components/ServiceCards";
+import { useState, useEffect } from "react";
 import Image from "next/image";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+import ServiceCards from "@/components/ServiceCards";
 
 export default function AboutUs() {
+  const [trainers, setTrainers] = useState([]);
+  const [newTrainerName, setNewTrainerName] = useState("");
+  const [image, setImage] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  // Fetch trainers from MongoDB on page load
+  useEffect(() => {
+    fetch("/api/trainers")
+      .then((res) => res.json())
+      .then((data) => setTrainers(data.trainers))
+      .catch(console.error);
+  }, []);
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onloadend = () => setImage(reader.result);
+  };
+
+  const handleUpload = async () => {
+    if (!image || !newTrainerName) return alert("Enter name and select image");
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/trainers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newTrainerName, imageBase64: image }),
+      });
+      const data = await res.json();
+      if (data.trainer) {
+        setTrainers([data.trainer, ...trainers]);
+        setImage(null);
+        setNewTrainerName("");
+      } else {
+        alert("Upload failed");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Upload error");
+    }
+
+    setLoading(false);
+  };
+
   return (
     <div className="w-screen bg-gray-100">
-      <header>
-        <Navbar />
-      </header>
-      {/* Hero Image */}
+      <Navbar />
+
+      {/* Hero Section */}
       <div className="relative w-full h-[250px]">
         <Image src="/gym.PNG" alt="About Us" priority fill />
       </div>
 
-      {/* Intro Section */}
-      <div className="w-full flex flex-col lg:flex-row gap-6 p-6">
-        <div className="w-full lg:w-1/2">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mt-4 text-center lg:text-left">
-            Transform Your Body, Transform Your Life - Only at Ajima
-          </h1>
-          <p className="text-base sm:text-lg mt-4 text-center lg:text-left">
-            At <b>Ajima Physical Fitness</b>, we believe you don’t need fancy
-            machines to build real strength. What matters is the right guidance,
-            consistency, and equipment that works. That’s why we focus on
-            providing a personalized training experience led by a dedicated
-            trainer, using tried-and-true equipment that effectively targets
-            every muscle group.
-          </p>
-          <p className="text-base sm:text-lg mt-2 text-center lg:text-left">
-            Our gym may not have the newest high-tech machines, but we have
-            everything you need to achieve real results. From strength training
-            to endurance building, every workout is designed to match your
-            fitness level and personal goals.
-          </p>
-        </div>
-
-        <div className="w-full lg:w-1/2 flex justify-center items-center">
-          <Image
-            src="/2574152.jpg"
-            alt="Gym Equipment"
-            width={500}
-            height={400}
-            className="rounded-2xl shadow-lg"
-          />
-        </div>
+      {/* Upload Form */}
+      <div className="flex flex-col items-center gap-4 mt-6 p-6 bg-gray-200 rounded-lg">
+        <input
+          type="text"
+          placeholder="Trainer Name"
+          value={newTrainerName}
+          onChange={(e) => setNewTrainerName(e.target.value)}
+          className="border px-2 py-1 rounded"
+        />
+        <input type="file" accept="image/*" onChange={handleFileChange} />
+        <button
+          onClick={handleUpload}
+          disabled={loading || !image || !newTrainerName}
+          className="bg-blue-500 text-white px-4 py-2 rounded"
+        >
+          {loading ? "Uploading..." : "Upload Trainer"}
+        </button>
       </div>
-
-      {/* Mission Section */}
-      <div className="bg-blue-600 mt-4 p-6 rounded-lg">
-        <h2 className="text-2xl sm:text-3xl font-bold text-center">
-          Our Mission
-        </h2>
-        <p className="text-base sm:text-lg mt-4 text-center">
-          <b>
-            “Our mission is to guide every individual towards strength,
-            confidence, and a healthier lifestyle through personalized training
-            and effective workouts with essential equipment.”
-          </b>
-        </p>
-      </div>
-
-      {/* Why Choose Us Section */}
-      <section className="w-full flex flex-col lg:flex-row items-center justify-center bg-gray-100 p-6 gap-6">
-        <div className="w-full lg:w-1/2">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold">
-            Why Choose Ajima?
-          </h1>
-          <p className="mt-2 text-base sm:text-lg">
-            At <b>Ajima Physical Fitness</b>, you get more than just a gym
-            membership – you get personal guidance from a dedicated trainer who
-            truly cares about your progress. With customized workout plans and
-            one-on-one support, your fitness journey is always tailored to your
-            goals and abilities.
-          </p>
-          <p className="mt-2 text-base sm:text-lg">
-            We may not have the latest flashy machines, but we have everything
-            needed to target every muscle group effectively. Combined with the
-            right training, motivation, and a friendly environment, Ajima is the
-            perfect place to build strength, confidence, and a healthier
-            lifestyle.
-          </p>
-        </div>
-
-        <div className="w-full lg:w-1/2 bg-gray-200 p-4 rounded-lg">
-          <ServiceCards />
-        </div>
-      </section>
 
       {/* Trainers Section */}
       <section className="w-full p-6">
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-center mt-8">
-          Meet Our Trainer
+          Meet Our Trainers
         </h1>
         <div className="flex flex-wrap justify-center gap-12 mt-8">
-          <div className="flex flex-col items-center text-center">
-            <Image
-              src="/trainer.jpg"
-              alt="Ram Krishna Tamakhu"
-              width={200}
-              height={200}
-              className="rounded-full object-cover"
-            />
-            <h2 className="text-xl sm:text-2xl font-bold mt-2">
-              Ram Krishna Tamakhu
-            </h2>
-          </div>
-
-          <div className="flex flex-col items-center text-center">
-            <Image
-              src="/trainer1.jpg"
-              alt="Keshab Naga"
-              width={200}
-              height={200}
-              className="rounded-full object-cover"
-            />
-            <h2 className="text-xl sm:text-2xl font-bold mt-2">Keshab Naga</h2>
-          </div>
+          {trainers.map((trainer) => (
+            <div
+              key={trainer._id}
+              className="flex flex-col items-center text-center"
+            >
+              <Image
+                src={trainer.imageUrl}
+                alt={trainer.name}
+                width={200}
+                height={200}
+                className="rounded-full object-cover"
+              />
+              <h2 className="text-xl sm:text-2xl font-bold mt-2">
+                {trainer.name}
+              </h2>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* Footer */}
+      <ServiceCards />
       <Footer />
     </div>
   );

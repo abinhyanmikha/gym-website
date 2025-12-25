@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth';
 import connectDB from '../../../../lib/mongodb';
 import User from '../../../../models/User';
 
-// GET handler to list all users
+// GET handler to list all users with optional sorting and search
 export async function GET(request) {
   try {
     // Check if user is authenticated and is admin
@@ -13,11 +13,56 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Connect to MongoDB and fetch users
+    // Parse query parameters
+    const { searchParams } = new URL(request.url);
+    const sortBy = searchParams.get('sortBy') || 'createdAt';
+    const sortOrder = searchParams.get('sortOrder') || 'desc';
+    const search = searchParams.get('search') || '';
+    const limit = parseInt(searchParams.get('limit')) || 100;
+    const page = parseInt(searchParams.get('page')) || 1;
+
+    // Connect to MongoDB
     await connectDB();
-    const users = await User.find({}, { password: 0 }); // Exclude password field
-    
-    return NextResponse.json(users);
+
+    // Build search query
+    let query = {};
+    if (search) {
+      query = {
+        $or: [
+          { name: { $regex: search, $options: 'i' } },
+          { email: { $regex: search, $options: 'i' } },
+          { role: { $regex: search, $options: 'i' } }
+        ]
+      };
+    }
+
+    // Build sort object
+    const sortObj = {};
+    sortObj[sortBy] = sortOrder === 'asc' ? 1 : -1;
+
+    // Calculate skip for pagination
+    const skip = (page - 1) * limit;
+
+    // Fetch users with sorting, search, and pagination
+    const users = await User.find(query, { password: 0 })
+      .sort(sortObj)
+      .limit(limit)
+      .skip(skip);
+
+    // Get total count for pagination
+    const totalUsers = await User.countDocuments(query);
+    const totalPages = Math.ceil(totalUsers / limit);
+
+    return NextResponse.json({
+      users,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalUsers,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1
+      }
+    });
   } catch (error) {
     console.error('Error fetching users:', error);
     return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });
