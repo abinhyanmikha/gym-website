@@ -30,25 +30,6 @@ export async function sendEmail({ to, subject, html }) {
   }
 }
 
-export async function sendHelloEmail(email) {
-  const html = `
-    <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif;">
-      <h2 style="color: #333; text-align: center;">Hello</h2>
-      <p>Thanks for reaching out.</p>
-      <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
-      <p style="color: #666; font-size: 12px; text-align: center;">
-        This email was sent from your Gym Management System
-      </p>
-    </div>
-  `;
-
-  return await sendEmail({
-    to: email,
-    subject: "Hello from Gym Website",
-    html,
-  });
-}
-
 export async function sendPasswordResetEmail(email, resetToken) {
   const resetUrl = `${process.env.NEXTAUTH_URL}/reset-password?token=${resetToken}`;
   

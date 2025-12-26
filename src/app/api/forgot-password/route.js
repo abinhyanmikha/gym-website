@@ -1,9 +1,10 @@
-import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
-import User from "@/models/User";
-import PasswordReset from "@/models/PasswordReset";
-import { sendPasswordResetEmail } from "@/lib/email";
-import crypto from "crypto";
+import { NextResponse } from 'next/server';
+import connectDB from '@/lib/mongodb';
+import { hashToken } from '@/lib/auth';
+import User from '@/models/User';
+import PasswordReset from '@/models/PasswordReset';
+import { sendPasswordResetEmail } from '@/lib/email';
+import crypto from 'crypto';
 
 export async function POST(request) {
   try {

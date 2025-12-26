@@ -76,35 +76,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Upload Section for Trainers */}
-      <section className="py-16 bg-gray-100 text-center">
-        <h2 className="text-4xl font-bold mb-6">Upload Trainer Image ☁️</h2>
-        <input
-          type="file"
-          accept="image/*"
-          onChange={(e) => setFile(e.target.files?.[0] || null)}
-          className="mb-4"
-        />
-        <button
-          onClick={handleUpload}
-          className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-6 rounded-md"
-        >
-          Upload
-        </button>
-
-        {imageUrl && (
-          <div className="mt-6">
-            <p className="mb-2">Uploaded Image:</p>
-            <img
-              src={imageUrl}
-              alt="Trainer"
-              width="200"
-              className="mx-auto rounded-md shadow-lg"
-            />
-          </div>
-        )}
-      </section>
-
       {/* Services Section */}
       <section className="py-16 bg-gray-50">
         <div className="container mx-auto px-4">

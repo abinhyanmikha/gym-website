@@ -1,10 +1,17 @@
 // src/app/api/trainers/route.js
 import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
 import cloudinary from "@/lib/cloudinary";
 import dbConnect from "@/lib/mongodb";
 import Trainer from "@/models/Trainer";
 
 export async function POST(req) {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "admin") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { name, imageBase64 } = await req.json();
 
   if (!name || !imageBase64) {

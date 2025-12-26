@@ -18,7 +18,7 @@ function PaymentSuccessInner() {
       console.log("User not authenticated yet");
       return;
     }
-    
+
     if (!refId) {
       console.log("Missing refId/pid parameter");
       return;
@@ -29,22 +29,22 @@ function PaymentSuccessInner() {
       amt: amount,
       subscriptionName,
       subscriptionId,
-      userId: session?.user?.id
+      userId: session?.user?.id,
     });
 
     const verifyPayment = async () => {
       try {
         // Convert amount to number if it's a string
         const amountValue = amount ? parseFloat(amount) : 0;
-        
+
         console.log("Sending verification request with:", {
           amount: amountValue,
           refId,
           userId: session.user.id,
           subscriptionName,
-          subscriptionId
+          subscriptionId,
         });
-        
+
         const res = await fetch("/api/esewa/verify", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -66,7 +66,7 @@ function PaymentSuccessInner() {
 
         const data = await res.json();
         console.log("Payment verification result:", data);
-        
+
         if (data.success) {
           console.log("Payment verified successfully!");
         } else {
@@ -82,17 +82,32 @@ function PaymentSuccessInner() {
 
   return (
     <div className="w-screen h-screen flex flex-col justify-center items-center bg-green-100 px-4">
-      <h1 className="text-3xl font-bold text-green-800 mb-4">Payment Successful!</h1>
+      <h1 className="text-3xl font-bold text-green-800 mb-4">
+        Payment Successful!
+      </h1>
       <p className="text-lg text-green-700 mb-6 text-center">
         Thank you for your payment. Your subscription has been activated.
       </p>
       <div className="bg-white p-6 rounded-lg shadow-md mb-6 w-full max-w-md">
-        <h2 className="text-xl font-semibold mb-4 text-gray-800">Payment Details</h2>
+        <h2 className="text-xl font-semibold mb-4 text-gray-800">
+          Payment Details
+        </h2>
         <div className="space-y-2">
-          <p><span className="font-medium">Plan:</span> {subscriptionName || 'N/A'}</p>
-          <p><span className="font-medium">Amount:</span> Rs. {amount || '0'}</p>
-          <p><span className="font-medium">Transaction ID:</span> {refId || 'N/A'}</p>
-          <p><span className="font-medium">Status:</span> <span className="text-green-600 font-semibold">Success</span></p>
+          <p>
+            <span className="font-medium">Plan:</span>{" "}
+            {subscriptionName || "N/A"}
+          </p>
+          <p>
+            <span className="font-medium">Amount:</span> Rs. {amount || "0"}
+          </p>
+          <p>
+            <span className="font-medium">Transaction ID:</span>{" "}
+            {refId || "N/A"}
+          </p>
+          <p>
+            <span className="font-medium">Status:</span>{" "}
+            <span className="text-green-600 font-semibold">Success</span>
+          </p>
         </div>
       </div>
       <a
@@ -107,13 +122,7 @@ function PaymentSuccessInner() {
 
 export default function PaymentSuccess() {
   return (
-    <Suspense
-      fallback={
-        <div className="w-screen h-screen flex justify-center items-center bg-green-100 px-4">
-          Loading...
-        </div>
-      }
-    >
+    <Suspense fallback={null}>
       <PaymentSuccessInner />
     </Suspense>
   );

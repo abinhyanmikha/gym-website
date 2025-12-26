@@ -1,10 +1,6 @@
 import { NextResponse } from "next/server";
 import cloudinary from "@/lib/cloudinary";
 
-export const config = {
-  api: { bodyParser: { sizeLimit: "10mb" } },
-};
-
 export async function POST(req) {
   try {
     const body = await req.json();

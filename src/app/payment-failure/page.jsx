@@ -56,13 +56,7 @@ function PaymentFailureInner() {
 
 export default function PaymentFailure() {
   return (
-    <Suspense
-      fallback={
-        <div className="w-screen h-screen flex justify-center items-center bg-red-100 px-4">
-          Loading...
-        </div>
-      }
-    >
+    <Suspense fallback={null}>
       <PaymentFailureInner />
     </Suspense>
   );

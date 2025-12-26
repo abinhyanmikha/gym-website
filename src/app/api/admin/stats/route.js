@@ -22,56 +22,24 @@ export async function GET(request) {
 
     // Calculate stats from MongoDB
     const totalUsers = await User.countDocuments();
-
+    
     // Count active subscriptions (user subscriptions that are currently active)
-    const activeSubscriptions = await UserSubscription.countDocuments({
-      status: "active",
+    const activeSubscriptions = await UserSubscription.countDocuments({ 
+      status: "active" 
     });
 
-    const now = new Date();
-    const startOfToday = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate()
-    );
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const startOfYear = new Date(now.getFullYear(), 0, 1);
-
+    // Calculate total revenue from successful payments
     const revenueResult = await Payment.aggregate([
-      { $match: { status: "success" } },
-      {
-        $facet: {
-          total: [{ $group: { _id: null, total: { $sum: "$amount" } } }],
-          daily: [
-            { $match: { createdAt: { $gte: startOfToday } } },
-            { $group: { _id: null, total: { $sum: "$amount" } } },
-          ],
-          monthly: [
-            { $match: { createdAt: { $gte: startOfMonth } } },
-            { $group: { _id: null, total: { $sum: "$amount" } } },
-          ],
-          yearly: [
-            { $match: { createdAt: { $gte: startOfYear } } },
-            { $group: { _id: null, total: { $sum: "$amount" } } },
-          ],
-        },
-      },
+      { $match: { status: "success" } }, // Changed from "completed" to "success" to match our payment status
+      { $group: { _id: null, total: { $sum: "$amount" } } },
     ]);
-
-    const facets = revenueResult?.[0] || {};
-    const totalRevenue = facets.total?.[0]?.total || 0;
-    const dailyRevenue = facets.daily?.[0]?.total || 0;
-    const monthlyRevenue = facets.monthly?.[0]?.total || 0;
-    const yearlyRevenue = facets.yearly?.[0]?.total || 0;
+    const totalRevenue = revenueResult.length > 0 ? revenueResult[0].total : 0;
 
     return new Response(
       JSON.stringify({
         totalUsers,
         activeSubscriptions,
         totalRevenue,
-        dailyRevenue,
-        monthlyRevenue,
-        yearlyRevenue,
       }),
       {
         status: 200,
