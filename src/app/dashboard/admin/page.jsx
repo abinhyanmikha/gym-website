@@ -2,14 +2,25 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { redirect } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import LogoutButton from "@/components/LogoutButton";
 import UserModal from "@/components/admin/UserModal";
 import SubscriptionModal from "@/components/admin/SubscriptionModal";
 
+const ALLOWED_TABS = [
+  "overview",
+  "users",
+  "subscriptions",
+  "payments",
+  "trainers",
+];
+
 export default function AdminDashboardPage() {
   const { data: session, status } = useSession();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab");
   const [activeTab, setActiveTab] = useState("overview");
   const [stats, setStats] = useState({
     totalUsers: 0,
@@ -36,13 +47,30 @@ export default function AdminDashboardPage() {
   // Check authentication
   useEffect(() => {
     if (status === "unauthenticated") {
-      redirect("/login");
+      router.replace("/login");
     }
 
     if (status === "authenticated" && session?.user?.role !== "admin") {
-      redirect("/dashboard/user");
+      router.replace("/dashboard/user");
     }
-  }, [status, session]);
+  }, [status, session, router]);
+
+  useEffect(() => {
+    const nextTab = (tabParam || "overview").toLowerCase();
+    if (!ALLOWED_TABS.includes(nextTab)) {
+      router.replace("/dashboard/admin?tab=overview");
+      if (activeTab !== "overview") {
+        setActiveTab("overview");
+        setSearchTerm("");
+      }
+      return;
+    }
+
+    if (nextTab !== activeTab) {
+      setActiveTab(nextTab);
+      setSearchTerm("");
+    }
+  }, [tabParam, router, activeTab]);
 
   const normalize = (value) => (value ?? "").toString().toLowerCase();
 
@@ -228,87 +256,6 @@ export default function AdminDashboardPage() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-800">Admin Dashboard</h1>
         <LogoutButton />
-      </div>
-
-      {/* Navigation Tabs */}
-      <div className="mb-6 border-b border-gray-200">
-        <ul className="flex flex-wrap -mb-px text-sm font-medium text-center">
-          <li className="mr-2">
-            <button
-              className={`inline-block p-4 rounded-t-lg ${
-                activeTab === "overview"
-                  ? "text-blue-600 border-b-2 border-blue-600"
-                  : "hover:text-gray-600 hover:border-gray-300"
-              }`}
-              onClick={() => {
-                setActiveTab("overview");
-                setSearchTerm("");
-              }}
-            >
-              Overview
-            </button>
-          </li>
-          <li className="mr-2">
-            <button
-              className={`inline-block p-4 rounded-t-lg ${
-                activeTab === "users"
-                  ? "text-blue-600 border-b-2 border-blue-600"
-                  : "hover:text-gray-600 hover:border-gray-300"
-              }`}
-              onClick={() => {
-                setActiveTab("users");
-                setSearchTerm("");
-              }}
-            >
-              Users
-            </button>
-          </li>
-          <li className="mr-2">
-            <button
-              className={`inline-block p-4 rounded-t-lg ${
-                activeTab === "subscriptions"
-                  ? "text-blue-600 border-b-2 border-blue-600"
-                  : "hover:text-gray-600 hover:border-gray-300"
-              }`}
-              onClick={() => {
-                setActiveTab("subscriptions");
-                setSearchTerm("");
-              }}
-            >
-              Subscriptions
-            </button>
-          </li>
-          <li className="mr-2">
-            <button
-              className={`inline-block p-4 rounded-t-lg ${
-                activeTab === "payments"
-                  ? "text-blue-600 border-b-2 border-blue-600"
-                  : "hover:text-gray-600 hover:border-gray-300"
-              }`}
-              onClick={() => {
-                setActiveTab("payments");
-                setSearchTerm("");
-              }}
-            >
-              Payments
-            </button>
-          </li>
-          <li>
-            <button
-              className={`inline-block p-4 rounded-t-lg ${
-                activeTab === "trainers"
-                  ? "text-blue-600 border-b-2 border-blue-600"
-                  : "hover:text-gray-600 hover:border-gray-300"
-              }`}
-              onClick={() => {
-                setActiveTab("trainers");
-                setSearchTerm("");
-              }}
-            >
-              Trainers
-            </button>
-          </li>
-        </ul>
       </div>
 
       {/* Stats Cards - Show only on overview */}

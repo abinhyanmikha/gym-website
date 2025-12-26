@@ -1,14 +1,16 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 
 export default function DashboardNav() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { data: session } = useSession();
 
   const isAdmin = session?.user?.role === "admin";
+  const adminTab = (searchParams.get("tab") || "overview").toLowerCase();
 
   const userNavItems = [
     { name: "Dashboard", href: "/dashboard/user" },
@@ -17,11 +19,27 @@ export default function DashboardNav() {
   ];
 
   const adminNavItems = [
-    { name: "Dashboard", href: "/dashboard/admin" },
-    { name: "Users", href: "/dashboard/admin/users" },
-    { name: "Subscriptions", href: "/dashboard/admin/subscriptions" },
-    { name: "Payments", href: "/dashboard/admin/payments" },
-    { name: "Trainers", href: "/dashboard/admin/trainers" },
+    {
+      name: "Dashboard",
+      href: "/dashboard/admin?tab=overview",
+      tab: "overview",
+    },
+    { name: "Users", href: "/dashboard/admin?tab=users", tab: "users" },
+    {
+      name: "Subscriptions",
+      href: "/dashboard/admin?tab=subscriptions",
+      tab: "subscriptions",
+    },
+    {
+      name: "Payments",
+      href: "/dashboard/admin?tab=payments",
+      tab: "payments",
+    },
+    {
+      name: "Trainers",
+      href: "/dashboard/admin?tab=trainers",
+      tab: "trainers",
+    },
   ];
 
   const navItems = isAdmin ? adminNavItems : userNavItems;
@@ -38,7 +56,9 @@ export default function DashboardNav() {
             </div>
             <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
               {navItems.map((item) => {
-                const isActive = pathname === item.href;
+                const isActive = isAdmin
+                  ? pathname === "/dashboard/admin" && adminTab === item.tab
+                  : pathname === item.href;
                 return (
                   <Link
                     key={item.name}
@@ -70,7 +90,9 @@ export default function DashboardNav() {
       <div className="sm:hidden">
         <div className="pt-2 pb-3 space-y-1">
           {navItems.map((item) => {
-            const isActive = pathname === item.href;
+            const isActive = isAdmin
+              ? pathname === "/dashboard/admin" && adminTab === item.tab
+              : pathname === item.href;
             return (
               <Link
                 key={item.name}
