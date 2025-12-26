@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import connectDB from '../../../../lib/mongodb';
 import Payment from '../../../../models/Payment';
+import Subscription from '../../../../models/Subscription';
+import mongoose from 'mongoose';
 
 // GET handler to list all payments with optional sorting and search
 export async function GET(request) {
@@ -51,14 +53,62 @@ export async function GET(request) {
       .sort(sortObj)
       .limit(limit)
       .skip(skip)
-      .populate('userId', 'name email');
+      .populate('userId', 'name email')
+      .lean();
+
+    const subscriptionIds = payments
+      .map((payment) => payment.subscriptionId)
+      .filter((id) => mongoose.isValidObjectId(id));
+
+    const subscriptions = subscriptionIds.length
+      ? await Subscription.find({ _id: { $in: subscriptionIds } }).lean()
+      : [];
+
+    const subscriptionById = new Map(
+      subscriptions.map((subscription) => [
+        subscription._id.toString(),
+        subscription,
+      ])
+    );
+
+    const enrichedPayments = payments.map((payment) => {
+      const plan = subscriptionById.get(payment.subscriptionId) || null;
+      const user = payment.userId
+        ? {
+            id: payment.userId._id?.toString?.() || payment.userId._id,
+            name: payment.userId.name,
+            email: payment.userId.email,
+          }
+        : null;
+
+      return {
+        _id: payment._id?.toString?.() || payment._id,
+        refId: payment.refId,
+        amount: payment.amount,
+        status: payment.status,
+        createdAt: payment.createdAt,
+        subscriptionId: payment.subscriptionId,
+        subscriptionName: payment.subscriptionName,
+        user,
+        plan: plan
+          ? {
+              id: plan._id.toString(),
+              name: plan.name,
+              price: plan.price,
+              duration: plan.duration,
+              includesCardio: plan.includesCardio,
+              features: plan.features,
+            }
+          : null,
+      };
+    });
 
     // Get total count for pagination
     const totalPayments = await Payment.countDocuments(query);
     const totalPages = Math.ceil(totalPayments / limit);
     
     return NextResponse.json({
-      payments,
+      payments: enrichedPayments,
       pagination: {
         currentPage: page,
         totalPages,

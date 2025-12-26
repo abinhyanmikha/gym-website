@@ -71,10 +71,19 @@ export default function AdminDashboardPage() {
   const visiblePayments = searchTerm.trim()
     ? payments.filter((p) => {
         const q = normalize(searchTerm.trim());
+        const planText = [
+          p?.plan?.name,
+          p?.plan?.duration,
+          p?.plan?.price,
+          p?.subscriptionName,
+          p?.subscriptionId,
+        ]
+          .filter(Boolean)
+          .join(" ");
         return (
-          normalize(p?.userName).includes(q) ||
-          normalize(p?.userEmail).includes(q) ||
-          normalize(p?.planName).includes(q) ||
+          normalize(p?.user?.name).includes(q) ||
+          normalize(p?.user?.email).includes(q) ||
+          normalize(planText).includes(q) ||
           normalize(p?.refId).includes(q)
         );
       })
@@ -656,20 +665,33 @@ export default function AdminDashboardPage() {
                     <tr key={payment._id || payment.id}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">
-                          {payment.userName || "Unknown"}
+                          {payment.user?.name || "Unknown"}
                         </div>
                         <div className="text-sm text-gray-500">
-                          {payment.userEmail || "No email"}
+                          {payment.user?.email || "No email"}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
-                          {payment.planName || "Unknown Plan"}
+                          {payment.plan?.name ||
+                            payment.subscriptionName ||
+                            "Unknown Plan"}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {payment.plan
+                            ? `Rs. ${Number(
+                                payment.plan.price || 0
+                              ).toLocaleString()} • ${
+                                payment.plan.duration
+                              } days`
+                            : payment.subscriptionId
+                            ? `Plan ID: ${payment.subscriptionId}`
+                            : "Plan not found"}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
-                          ${payment.amount}
+                          Rs. {Number(payment.amount || 0).toLocaleString()}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -682,7 +704,7 @@ export default function AdminDashboardPage() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
                           className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            payment.status === "completed"
+                            payment.status === "success"
                               ? "bg-green-100 text-green-800"
                               : payment.status === "pending"
                               ? "bg-yellow-100 text-yellow-800"
