@@ -26,6 +26,9 @@ export default function AdminDashboardPage() {
     totalUsers: 0,
     activeSubscriptions: 0,
     totalRevenue: 0,
+    dailyRevenue: 0,
+    monthlyRevenue: 0,
+    yearlyRevenue: 0,
   });
   const [users, setUsers] = useState([]);
   const [subscriptions, setSubscriptions] = useState([]);
@@ -260,19 +263,39 @@ export default function AdminDashboardPage() {
 
       {/* Stats Cards - Show only on overview */}
       {activeTab === "overview" && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-6 mb-6">
           <div className="bg-blue-100 p-4 rounded-lg shadow">
             <h2 className="text-lg font-semibold mb-2">Total Users</h2>
-            <p className="text-3xl font-bold">{stats.totalUsers}</p>
+            <p className="text-3xl font-bold">{stats.totalUsers ?? 0}</p>
           </div>
           <div className="bg-green-100 p-4 rounded-lg shadow">
             <h2 className="text-lg font-semibold mb-2">Active Subscriptions</h2>
-            <p className="text-3xl font-bold">{stats.activeSubscriptions}</p>
+            <p className="text-3xl font-bold">
+              {stats.activeSubscriptions ?? 0}
+            </p>
+          </div>
+          <div className="bg-yellow-100 p-4 rounded-lg shadow">
+            <h2 className="text-lg font-semibold mb-2">Daily Revenue</h2>
+            <p className="text-3xl font-bold">
+              Rs. {Number(stats.dailyRevenue || 0).toLocaleString()}
+            </p>
+          </div>
+          <div className="bg-orange-100 p-4 rounded-lg shadow">
+            <h2 className="text-lg font-semibold mb-2">Monthly Revenue</h2>
+            <p className="text-3xl font-bold">
+              Rs. {Number(stats.monthlyRevenue || 0).toLocaleString()}
+            </p>
+          </div>
+          <div className="bg-indigo-100 p-4 rounded-lg shadow">
+            <h2 className="text-lg font-semibold mb-2">Yearly Revenue</h2>
+            <p className="text-3xl font-bold">
+              Rs. {Number(stats.yearlyRevenue || 0).toLocaleString()}
+            </p>
           </div>
           <div className="bg-purple-100 p-4 rounded-lg shadow">
             <h2 className="text-lg font-semibold mb-2">Total Revenue</h2>
             <p className="text-3xl font-bold">
-              Rs. {stats.totalRevenue.toLocaleString()}
+              Rs. {Number(stats.totalRevenue || 0).toLocaleString()}
             </p>
           </div>
         </div>

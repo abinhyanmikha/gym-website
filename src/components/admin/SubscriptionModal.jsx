@@ -1,47 +1,57 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 
-export default function SubscriptionModal({ isOpen, onClose, subscription, onSave }) {
+export default function SubscriptionModal({
+  isOpen,
+  onClose,
+  subscription,
+  onSave,
+}) {
   const [formData, setFormData] = useState({
-    name: '',
-    price: '',
-    duration: '',
-    features: ['']
+    name: "",
+    price: "",
+    duration: "",
+    includesCardio: false,
+    features: [""],
   });
-  
+
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (subscription) {
       setFormData({
-        name: subscription.name || '',
-        price: subscription.price || '',
-        duration: subscription.duration || '',
-        features: subscription.features?.length ? [...subscription.features] : ['']
+        name: subscription.name || "",
+        price: subscription.price || "",
+        duration: subscription.duration || "",
+        includesCardio: subscription.includesCardio || false,
+        features: subscription.features?.length
+          ? [...subscription.features]
+          : [""],
       });
     } else {
       // Reset form for new subscription
       setFormData({
-        name: '',
-        price: '',
-        duration: '',
-        features: ['']
+        name: "",
+        price: "",
+        duration: "",
+        includesCardio: false,
+        features: [""],
       });
     }
   }, [subscription, isOpen]);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: type === "checkbox" ? checked : value,
     }));
-    
+
     // Clear error when field is edited
     if (errors[name]) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
-        [name]: null
+        [name]: null,
       }));
     }
   };
@@ -49,80 +59,82 @@ export default function SubscriptionModal({ isOpen, onClose, subscription, onSav
   const handleFeatureChange = (index, value) => {
     const updatedFeatures = [...formData.features];
     updatedFeatures[index] = value;
-    
-    setFormData(prev => ({
+
+    setFormData((prev) => ({
       ...prev,
-      features: updatedFeatures
+      features: updatedFeatures,
     }));
   };
 
   const addFeature = () => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      features: [...prev.features, '']
+      features: [...prev.features, ""],
     }));
   };
 
   const removeFeature = (index) => {
     const updatedFeatures = [...formData.features];
     updatedFeatures.splice(index, 1);
-    
-    setFormData(prev => ({
+
+    setFormData((prev) => ({
       ...prev,
-      features: updatedFeatures.length ? updatedFeatures : ['']
+      features: updatedFeatures.length ? updatedFeatures : [""],
     }));
   };
 
   const validateForm = () => {
     const newErrors = {};
-    
+
     if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
+      newErrors.name = "Name is required";
     }
-    
+
     if (!formData.price) {
-      newErrors.price = 'Price is required';
+      newErrors.price = "Price is required";
     } else if (isNaN(formData.price) || Number(formData.price) <= 0) {
-      newErrors.price = 'Price must be a positive number';
+      newErrors.price = "Price must be a positive number";
     }
-    
+
     if (!formData.duration) {
-      newErrors.duration = 'Duration is required';
+      newErrors.duration = "Duration is required";
     } else if (isNaN(formData.duration) || Number(formData.duration) <= 0) {
-      newErrors.duration = 'Duration must be a positive number';
+      newErrors.duration = "Duration must be a positive number";
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
       // Filter out empty features
-      const filteredFeatures = formData.features.filter(feature => feature.trim() !== '');
-      
+      const filteredFeatures = formData.features.filter(
+        (feature) => feature.trim() !== ""
+      );
+
       const dataToSave = {
         ...formData,
         price: Number(formData.price),
         duration: Number(formData.duration),
-        features: filteredFeatures
+        features: filteredFeatures,
       };
-      
+
       await onSave(dataToSave);
       onClose();
     } catch (error) {
-      console.error('Error saving subscription:', error);
-      setErrors(prev => ({
+      console.error("Error saving subscription:", error);
+      setErrors((prev) => ({
         ...prev,
-        form: 'Failed to save subscription. Please try again.'
+        form: "Failed to save subscription. Please try again.",
       }));
     } finally {
       setIsSubmitting(false);
@@ -136,25 +148,30 @@ export default function SubscriptionModal({ isOpen, onClose, subscription, onSav
       <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">
-            {subscription ? 'Edit Subscription Plan' : 'Add New Subscription Plan'}
+            {subscription
+              ? "Edit Subscription Plan"
+              : "Add New Subscription Plan"}
           </h2>
-          <button 
+          <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700"
           >
             &times;
           </button>
         </div>
-        
+
         <form onSubmit={handleSubmit}>
           {errors.form && (
             <div className="mb-4 p-2 bg-red-100 text-red-800 rounded">
               {errors.form}
             </div>
           )}
-          
+
           <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="name">
+            <label
+              className="block text-gray-700 text-sm font-bold mb-2"
+              htmlFor="name"
+            >
               Plan Name
             </label>
             <input
@@ -164,16 +181,19 @@ export default function SubscriptionModal({ isOpen, onClose, subscription, onSav
               value={formData.name}
               onChange={handleChange}
               className={`shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ${
-                errors.name ? 'border-red-500' : ''
+                errors.name ? "border-red-500" : ""
               }`}
             />
             {errors.name && (
               <p className="text-red-500 text-xs italic">{errors.name}</p>
             )}
           </div>
-          
+
           <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="price">
+            <label
+              className="block text-gray-700 text-sm font-bold mb-2"
+              htmlFor="price"
+            >
               Price ($)
             </label>
             <input
@@ -185,16 +205,19 @@ export default function SubscriptionModal({ isOpen, onClose, subscription, onSav
               value={formData.price}
               onChange={handleChange}
               className={`shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ${
-                errors.price ? 'border-red-500' : ''
+                errors.price ? "border-red-500" : ""
               }`}
             />
             {errors.price && (
               <p className="text-red-500 text-xs italic">{errors.price}</p>
             )}
           </div>
-          
+
           <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="duration">
+            <label
+              className="block text-gray-700 text-sm font-bold mb-2"
+              htmlFor="duration"
+            >
               Duration (days)
             </label>
             <input
@@ -205,14 +228,29 @@ export default function SubscriptionModal({ isOpen, onClose, subscription, onSav
               value={formData.duration}
               onChange={handleChange}
               className={`shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ${
-                errors.duration ? 'border-red-500' : ''
+                errors.duration ? "border-red-500" : ""
               }`}
             />
             {errors.duration && (
               <p className="text-red-500 text-xs italic">{errors.duration}</p>
             )}
           </div>
-          
+
+          <div className="mb-4">
+            <label className="flex items-center space-x-2 cursor-pointer">
+              <input
+                name="includesCardio"
+                type="checkbox"
+                checked={formData.includesCardio}
+                onChange={handleChange}
+                className="form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
+              />
+              <span className="text-gray-700 text-sm font-bold">
+                Includes Cardio Training
+              </span>
+            </label>
+          </div>
+
           <div className="mb-6">
             <label className="block text-gray-700 text-sm font-bold mb-2">
               Features
@@ -243,7 +281,7 @@ export default function SubscriptionModal({ isOpen, onClose, subscription, onSav
               + Add Feature
             </button>
           </div>
-          
+
           <div className="flex items-center justify-end">
             <button
               type="button"
@@ -257,7 +295,7 @@ export default function SubscriptionModal({ isOpen, onClose, subscription, onSav
               disabled={isSubmitting}
               className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
             >
-              {isSubmitting ? 'Saving...' : 'Save'}
+              {isSubmitting ? "Saving..." : "Save"}
             </button>
           </div>
         </form>

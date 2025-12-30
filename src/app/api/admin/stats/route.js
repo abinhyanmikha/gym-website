@@ -28,18 +28,47 @@ export async function GET(request) {
       status: "active" 
     });
 
-    // Calculate total revenue from successful payments
-    const revenueResult = await Payment.aggregate([
-      { $match: { status: "success" } }, // Changed from "completed" to "success" to match our payment status
-      { $group: { _id: null, total: { $sum: "$amount" } } },
+    const now = new Date();
+    const startOfDay = new Date(now);
+    startOfDay.setHours(0, 0, 0, 0);
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
+
+    const revenueFacet = await Payment.aggregate([
+      { $match: { status: "success" } },
+      {
+        $facet: {
+          total: [{ $group: { _id: null, total: { $sum: "$amount" } } }],
+          daily: [
+            { $match: { createdAt: { $gte: startOfDay } } },
+            { $group: { _id: null, total: { $sum: "$amount" } } },
+          ],
+          monthly: [
+            { $match: { createdAt: { $gte: startOfMonth } } },
+            { $group: { _id: null, total: { $sum: "$amount" } } },
+          ],
+          yearly: [
+            { $match: { createdAt: { $gte: startOfYear } } },
+            { $group: { _id: null, total: { $sum: "$amount" } } },
+          ],
+        },
+      },
     ]);
-    const totalRevenue = revenueResult.length > 0 ? revenueResult[0].total : 0;
+
+    const facet = revenueFacet?.[0] || {};
+    const totalRevenue = facet.total?.[0]?.total || 0;
+    const dailyRevenue = facet.daily?.[0]?.total || 0;
+    const monthlyRevenue = facet.monthly?.[0]?.total || 0;
+    const yearlyRevenue = facet.yearly?.[0]?.total || 0;
 
     return new Response(
       JSON.stringify({
         totalUsers,
         activeSubscriptions,
         totalRevenue,
+        dailyRevenue,
+        monthlyRevenue,
+        yearlyRevenue,
       }),
       {
         status: 200,
