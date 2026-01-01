@@ -120,56 +120,38 @@ export function useAdminDashboard() {
       })
     : payments;
 
-  const handleDeleteUser = async (id) => {
-    if (confirm("Delete this user?")) {
-      const res = await fetch(`/api/admin/users/${id}`, { method: "DELETE" });
-      if (res.ok) fetchDashboardData();
-      else setError("Failed to delete user");
-    }
-  };
-
-  const handleDeleteSubscription = async (id) => {
-    if (confirm("Delete this plan?")) {
-      const res = await fetch(`/api/admin/subscriptions/${id}`, { method: "DELETE" });
-      if (res.ok) fetchDashboardData();
-      else setError("Failed to delete subscription plan");
-    }
-  };
-
-  const handleSaveUser = async (userData) => {
+  const apiAction = async (url, method, body, successMsg, errorMsg, callback) => {
     try {
-      const isUpdate = !!selectedUser;
-      const url = isUpdate ? `/api/admin/users/${selectedUser._id || selectedUser.id}` : "/api/admin/users";
       const res = await fetch(url, {
-        method: isUpdate ? "PUT" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(userData),
+        method,
+        headers: body ? { "Content-Type": "application/json" } : {},
+        body: body ? JSON.stringify(body) : undefined,
       });
-      if (!res.ok) throw new Error(`Failed to ${isUpdate ? "update" : "create"} user`);
-      setUserModalOpen(false);
-      fetchDashboardData();
+      if (res.ok) {
+        callback?.();
+        fetchDashboardData();
+        return true;
+      }
+      throw new Error(errorMsg);
     } catch (err) {
       setError(err.message);
-      throw err;
+      return false;
     }
   };
 
-  const handleSaveSubscription = async (data) => {
-    try {
-      const isUpdate = !!selectedSubscription;
-      const url = isUpdate ? `/api/admin/subscriptions/${selectedSubscription._id || selectedSubscription.id}` : "/api/admin/subscriptions";
-      const res = await fetch(url, {
-        method: isUpdate ? "PUT" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (!res.ok) throw new Error(`Failed to ${isUpdate ? "update" : "create"} subscription`);
-      setSubscriptionModalOpen(false);
-      fetchDashboardData();
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    }
+  const handleDeleteUser = id => confirm("Delete user?") && apiAction(`/api/admin/users/${id}`, "DELETE", null, null, "Failed to delete user");
+  const handleDeleteSubscription = id => confirm("Delete plan?") && apiAction(`/api/admin/subscriptions/${id}`, "DELETE", null, null, "Failed to delete plan");
+
+  const handleSaveUser = async data => {
+    const isUpdate = !!selectedUser;
+    const url = isUpdate ? `/api/admin/users/${selectedUser._id || selectedUser.id}` : "/api/admin/users";
+    if (await apiAction(url, isUpdate ? "PUT" : "POST", data, null, `Failed to ${isUpdate ? "update" : "create"} user`, () => setUserModalOpen(false))) return;
+  };
+
+  const handleSaveSubscription = async data => {
+    const isUpdate = !!selectedSubscription;
+    const url = isUpdate ? `/api/admin/subscriptions/${selectedSubscription._id || selectedSubscription.id}` : "/api/admin/subscriptions";
+    await apiAction(url, isUpdate ? "PUT" : "POST", data, null, `Failed to ${isUpdate ? "update" : "create"} subscription`, () => setSubscriptionModalOpen(false));
   };
 
   return {

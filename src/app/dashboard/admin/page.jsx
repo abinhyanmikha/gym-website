@@ -7,6 +7,8 @@ import StatCard from "@/components/dashboard/StatCard";
 import { useAdminDashboard } from "@/hooks/useAdminDashboard";
 import { UsersTab, SubscriptionsTab, PaymentsTab, TrainersTab } from "@/components/admin/DashboardTabs";
 
+import PageHeader from "@/components/dashboard/PageHeader";
+
 export default function AdminDashboardPage() {
   const d = useAdminDashboard(); // Dashboard hook
 
@@ -16,19 +18,16 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="bg-white shadow rounded-lg p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Admin Dashboard</h1>
-        <LogoutButton />
-      </div>
+      <PageHeader title="Admin Dashboard" />
 
       {d.activeTab === "overview" && (
         <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-6 mb-6">
           <StatCard title="Total Users" value={d.stats.totalUsers ?? 0} bgColor="bg-blue-100" />
           <StatCard title="Active Subscriptions" value={d.stats.activeSubscriptions ?? 0} bgColor="bg-green-100" />
-          <StatCard title="Daily Revenue" value={`Rs. ${Number(d.stats.dailyRevenue || 0).toLocaleString()}`} bgColor="bg-yellow-100" />
-          <StatCard title="Monthly Revenue" value={`Rs. ${Number(d.stats.monthlyRevenue || 0).toLocaleString()}`} bgColor="bg-orange-100" />
-          <StatCard title="Yearly Revenue" value={`Rs. ${Number(d.stats.yearlyRevenue || 0).toLocaleString()}`} bgColor="bg-indigo-100" />
-          <StatCard title="Total Revenue" value={`Rs. ${Number(d.stats.totalRevenue || 0).toLocaleString()}`} bgColor="bg-purple-100" />
+          <StatCard title="Daily Revenue" value={d.stats.dailyRevenue} isCurrency bgColor="bg-yellow-100" />
+          <StatCard title="Monthly Revenue" value={d.stats.monthlyRevenue} isCurrency bgColor="bg-orange-100" />
+          <StatCard title="Yearly Revenue" value={d.stats.yearlyRevenue} isCurrency bgColor="bg-indigo-100" />
+          <StatCard title="Total Revenue" value={d.stats.totalRevenue} isCurrency bgColor="bg-purple-100" />
         </div>
       )}
 

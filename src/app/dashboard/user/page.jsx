@@ -1,51 +1,35 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import LogoutButton from "@/components/LogoutButton";
 import { connectDB } from "@/lib/mongodb";
 import UserSubscription from "@/models/UserSubscription";
 import Payment from "@/models/Payment";
 import StatCard from "@/components/dashboard/StatCard";
 import DataTable from "@/components/dashboard/DataTable";
 import DashboardSection from "@/components/dashboard/DashboardSection";
+import PageHeader from "@/components/dashboard/PageHeader";
+import QuickLinks from "@/components/dashboard/QuickLinks";
 
 export default async function UserDashboardPage() {
   const session = await getServerSession(authOptions);
+  if (!session) redirect("/login");
+  if (session.user.role === "admin") redirect("/dashboard/admin");
 
-  if (!session) {
-    redirect("/login");
-  }
-
-  // Admin users should be redirected to admin dashboard
-  if (session.user.role === "admin") {
-    redirect("/dashboard/admin");
-  }
-
-  // Connect to database
   await connectDB();
+  const [activeSubscription, paymentHistory] = await Promise.all([
+    UserSubscription.findOne({ userId: session.user.id, status: "active" }).sort({ startDate: -1 }).lean(),
+    Payment.find({ userId: session.user.id }).sort({ createdAt: -1 }).limit(5).lean()
+  ]);
 
-  // Fetch user's active subscription
-  const activeSubscription = await UserSubscription.findOne({
-    userId: session.user.id,
-    status: "active",
-  })
-    .sort({ startDate: -1 })
-    .lean();
-
-  // Fetch payment history
-  const paymentHistory = await Payment.find({
-    userId: session.user.id,
-  })
-    .sort({ createdAt: -1 })
-    .limit(5)
-    .lean();
+  const quickLinks = [
+    { label: "Home", href: "/", desc: "Return to homepage" },
+    { label: "Membership Plans", href: "/Membership-Plans", desc: "View available plans" },
+    { label: "About Us", href: "/AboutUs", desc: "Learn more about us" },
+  ];
 
   return (
     <div className="bg-white shadow rounded-lg p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">My Dashboard</h1>
-        <LogoutButton />
-      </div>
+      <PageHeader title="My Dashboard" />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <StatCard 
@@ -71,7 +55,7 @@ export default async function UserDashboardPage() {
             ) : (
               <div className="text-sm">
                 <p className="text-gray-500 mb-2">No active subscription</p>
-                <a href="/Membership-Plans" className="text-blue-600 hover:underline">View Plans</a>
+                <a href="/Membership-Plans" className="text-blue-600 hover:underline font-medium">View Plans</a>
               </div>
             )
           } 
@@ -81,24 +65,13 @@ export default async function UserDashboardPage() {
 
       <DashboardSection title="Payment History">
         <DataTable
-          headers={[
-            { label: "Description" },
-            { label: "Date" },
-            { label: "Amount" },
-            { label: "Status", align: "right" },
-          ]}
+          headers={[{ label: "Description" }, { label: "Date" }, { label: "Amount" }, { label: "Status", align: "right" }]}
           data={paymentHistory || []}
           renderRow={(payment) => (
             <tr key={payment._id.toString()}>
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                {payment.description || "Subscription Payment"}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {new Date(payment.createdAt).toLocaleDateString()}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
-                Rs. {payment.amount}
-              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{payment.description || "Subscription Payment"}</td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(payment.createdAt).toLocaleDateString()}</td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">Rs. {payment.amount}</td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
                 <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                   payment.status === "success" ? "bg-green-100 text-green-800" : 
@@ -112,21 +85,7 @@ export default async function UserDashboardPage() {
         />
       </DashboardSection>
 
-      <div>
-        <h2 className="text-xl font-semibold mb-4">Quick Links</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {[
-            { label: "Home", href: "/", desc: "Return to homepage" },
-            { label: "Membership Plans", href: "/Membership-Plans", desc: "View available plans" },
-            { label: "About Us", href: "/AboutUs", desc: "Learn more about us" },
-          ].map((link) => (
-            <a key={link.href} href={link.href} className="bg-gray-100 p-4 rounded-lg shadow hover:bg-gray-200 transition-colors">
-              <h3 className="font-medium">{link.label}</h3>
-              <p className="text-sm text-gray-500">{link.desc}</p>
-            </a>
-          ))}
-        </div>
-      </div>
+      <QuickLinks links={quickLinks} />
     </div>
   );
 }
