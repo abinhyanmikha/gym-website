@@ -194,7 +194,7 @@ export default function SubscriptionModal({
               className="block text-gray-700 text-sm font-bold mb-2"
               htmlFor="price"
             >
-              Price ($)
+              Price (Rs)
             </label>
             <input
               id="price"
