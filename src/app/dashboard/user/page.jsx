@@ -5,6 +5,9 @@ import LogoutButton from "@/components/LogoutButton";
 import { connectDB } from "@/lib/mongodb";
 import UserSubscription from "@/models/UserSubscription";
 import Payment from "@/models/Payment";
+import StatCard from "@/components/dashboard/StatCard";
+import DataTable from "@/components/dashboard/DataTable";
+import DashboardSection from "@/components/dashboard/DashboardSection";
 
 export default async function UserDashboardPage() {
   const session = await getServerSession(authOptions);
@@ -44,146 +47,84 @@ export default async function UserDashboardPage() {
         <LogoutButton />
       </div>
 
-      <div className="mb-6">
-        <div className="bg-blue-50 p-4 rounded-lg shadow">
-          <h2 className="text-lg font-semibold mb-2">Profile Information</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-gray-500">Name</p>
-              <p className="font-medium">{session.user.name}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Email</p>
-              <p className="font-medium">{session.user.email}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <div className="bg-green-50 p-4 rounded-lg shadow">
-          <h2 className="text-lg font-semibold mb-2">My Subscription</h2>
-          <div className="p-4 bg-white rounded border border-gray-200">
-            {activeSubscription ? (
-              <div>
-                <div className="mb-4">
-                  <h3 className="font-bold text-lg text-green-700">
-                    {activeSubscription.plan}
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    Amount: Rs. {activeSubscription.amount}
-                  </p>
-                </div>
-                <div className="grid grid-cols-2 gap-2 mb-4">
-                  <div>
-                    <p className="text-xs text-gray-500">Start Date</p>
-                    <p className="font-medium">
-                      {new Date(
-                        activeSubscription.startDate
-                      ).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500">End Date</p>
-                    <p className="font-medium">
-                      {new Date(
-                        activeSubscription.endDate
-                      ).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-                <div className="bg-green-100 p-2 rounded">
-                  <p className="text-sm">
-                    <span className="font-medium">Status: </span>
-                    <span className="text-green-700 font-bold">Active</span>
-                  </p>
-                </div>
+        <StatCard 
+          title="Profile Information" 
+          value={
+            <div className="grid grid-cols-1 gap-1">
+              <p className="text-sm text-gray-500">Name: <span className="text-gray-800 font-medium">{session.user.name}</span></p>
+              <p className="text-sm text-gray-500">Email: <span className="text-gray-800 font-medium">{session.user.email}</span></p>
+            </div>
+          } 
+          bgColor="bg-blue-50" 
+        />
+        
+        <StatCard 
+          title="My Subscription" 
+          value={
+            activeSubscription ? (
+              <div className="text-sm">
+                <p className="font-bold text-green-700">{activeSubscription.plan}</p>
+                <p className="text-gray-600">Rs. {activeSubscription.amount}</p>
+                <p className="text-xs text-gray-500">End: {new Date(activeSubscription.endDate).toLocaleDateString()}</p>
               </div>
             ) : (
-              <>
-                <p className="text-gray-500 mb-2">
-                  You don't have an active subscription
-                </p>
-                <a
-                  href="/Membership-Plans"
-                  className="inline-block bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors"
-                >
-                  View Plans
-                </a>
-              </>
-            )}
-          </div>
-        </div>
-
-        <div className="bg-purple-50 p-4 rounded-lg shadow">
-          <h2 className="text-lg font-semibold mb-2">Payment History</h2>
-          <div className="p-4 bg-white rounded border border-gray-200">
-            {paymentHistory && paymentHistory.length > 0 ? (
-              <div className="space-y-3">
-                {paymentHistory.map((payment) => (
-                  <div
-                    key={payment._id}
-                    className="border-b pb-2 last:border-b-0"
-                  >
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="font-medium">
-                          {payment.description || "Subscription Payment"}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {new Date(payment.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold">Rs. {payment.amount}</p>
-                        <p
-                          className={`text-xs ${
-                            payment.status === "success"
-                              ? "text-green-600"
-                              : payment.status === "pending"
-                              ? "text-yellow-600"
-                              : "text-red-600"
-                          }`}
-                        >
-                          {payment.status.charAt(0).toUpperCase() +
-                            payment.status.slice(1)}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+              <div className="text-sm">
+                <p className="text-gray-500 mb-2">No active subscription</p>
+                <a href="/Membership-Plans" className="text-blue-600 hover:underline">View Plans</a>
               </div>
-            ) : (
-              <p className="text-gray-500">No payment history found</p>
-            )}
-          </div>
-        </div>
+            )
+          } 
+          bgColor="bg-green-50" 
+        />
       </div>
+
+      <DashboardSection title="Payment History">
+        <DataTable
+          headers={[
+            { label: "Description" },
+            { label: "Date" },
+            { label: "Amount" },
+            { label: "Status", align: "right" },
+          ]}
+          data={paymentHistory || []}
+          renderRow={(payment) => (
+            <tr key={payment._id.toString()}>
+              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                {payment.description || "Subscription Payment"}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {new Date(payment.createdAt).toLocaleDateString()}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
+                Rs. {payment.amount}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                  payment.status === "success" ? "bg-green-100 text-green-800" : 
+                  payment.status === "pending" ? "bg-yellow-100 text-yellow-800" : "bg-red-100 text-red-800"
+                }`}>
+                  {payment.status.charAt(0).toUpperCase() + payment.status.slice(1)}
+                </span>
+              </td>
+            </tr>
+          )}
+        />
+      </DashboardSection>
 
       <div>
         <h2 className="text-xl font-semibold mb-4">Quick Links</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          <a
-            href="/"
-            className="bg-gray-100 p-4 rounded-lg shadow hover:bg-gray-200 transition-colors"
-          >
-            <h3 className="font-medium">Home</h3>
-            <p className="text-sm text-gray-500">Return to homepage</p>
-          </a>
-          <a
-            href="/Membership-Plans"
-            className="bg-gray-100 p-4 rounded-lg shadow hover:bg-gray-200 transition-colors"
-          >
-            <h3 className="font-medium">Membership Plans</h3>
-            <p className="text-sm text-gray-500">View available plans</p>
-          </a>
-          <a
-            href="/AboutUs"
-            className="bg-gray-100 p-4 rounded-lg shadow hover:bg-gray-200 transition-colors"
-          >
-            <h3 className="font-medium">About Us</h3>
-            <p className="text-sm text-gray-500">Learn more about us</p>
-          </a>
+          {[
+            { label: "Home", href: "/", desc: "Return to homepage" },
+            { label: "Membership Plans", href: "/Membership-Plans", desc: "View available plans" },
+            { label: "About Us", href: "/AboutUs", desc: "Learn more about us" },
+          ].map((link) => (
+            <a key={link.href} href={link.href} className="bg-gray-100 p-4 rounded-lg shadow hover:bg-gray-200 transition-colors">
+              <h3 className="font-medium">{link.label}</h3>
+              <p className="text-sm text-gray-500">{link.desc}</p>
+            </a>
+          ))}
         </div>
       </div>
     </div>
