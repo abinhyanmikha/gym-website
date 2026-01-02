@@ -32,7 +32,7 @@ const UserSubscriptionSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["active", "pending", "failed", "expired"],
+      enum: ["active", "pending", "failed"],
       default: "active",
     },
     startDate: {

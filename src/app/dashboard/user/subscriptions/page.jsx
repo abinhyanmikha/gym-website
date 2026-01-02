@@ -3,7 +3,6 @@ import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { connectDB } from "@/lib/mongodb";
 import UserSubscription from "@/models/UserSubscription";
-import { updateExpiredSubscriptions } from "@/lib/subscriptions";
 
 export default async function UserSubscriptionsPage() {
   const session = await getServerSession(authOptions);
@@ -19,27 +18,18 @@ export default async function UserSubscriptionsPage() {
 
   await connectDB();
 
-  // Update any expired subscriptions for this session
-  await updateExpiredSubscriptions();
-
-  const allSubscriptions = await UserSubscription.find({
+  const currentSubscription = await UserSubscription.findOne({
     userId: session.user.id,
+    status: "active",
   })
     .sort({ startDate: -1 })
     .lean();
 
-  const now = new Date();
-  
-  // Categorize subscriptions
-  // A subscription is "truly active" if its status is 'active' AND it hasn't passed its end date
-  const currentSubscription = allSubscriptions.find(s => 
-    s.status === "active" && s.endDate && new Date(s.endDate) > now
-  );
-
-  // If we didn't find a 'truly active' one, maybe there's one that just expired but hasn't been updated in DB yet
-  const recentlyExpired = !currentSubscription ? allSubscriptions.find(s => 
-    s.status === "active" && s.endDate && new Date(s.endDate) <= now
-  ) : null;
+  const subscriptionHistory = await UserSubscription.find({
+    userId: session.user.id,
+  })
+    .sort({ startDate: -1 })
+    .lean();
 
   return (
     <div className="bg-white shadow rounded-lg p-6">
@@ -77,46 +67,24 @@ export default async function UserSubscriptionsPage() {
                   </div>
                 </div>
                 <div className="bg-green-100 p-2 rounded">
-                  <p className="text-sm text-green-700">
+                  <p className="text-sm">
                     <span className="font-medium">Status: </span>
-                    <span className="font-bold">Active</span>
+                    <span className="text-green-700 font-bold">Active</span>
                   </p>
                 </div>
-              </div>
-            ) : recentlyExpired ? (
-              <div>
-                <div className="mb-4 opacity-75">
-                  <h3 className="font-bold text-lg text-gray-700">
-                    {recentlyExpired.plan} (Expired)
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    End Date: {recentlyExpired.endDate ? new Date(recentlyExpired.endDate).toLocaleDateString() : "-"}
-                  </p>
-                </div>
-                <div className="bg-red-50 p-2 rounded border border-red-100">
-                  <p className="text-sm text-red-700">
-                    Your subscription has expired. Please renew.
-                  </p>
-                </div>
-                <a
-                  href="/Membership-Plans"
-                  className="mt-4 inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
-                >
-                  Renew Subscription
-                </a>
               </div>
             ) : (
-              <div className="py-2">
-                <p className="text-gray-500 mb-4">
+              <>
+                <p className="text-gray-500 mb-2">
                   You don't have an active subscription
                 </p>
                 <a
                   href="/Membership-Plans"
                   className="inline-block bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors"
                 >
-                  View Membership Plans
+                  View Plans
                 </a>
-              </div>
+              </>
             )}
           </div>
         </div>
@@ -136,43 +104,36 @@ export default async function UserSubscriptionsPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {allSubscriptions.length > 0 ? (
-                allSubscriptions.map((s) => {
-                  const isExpiredStatus = s.status === "expired" || (s.status === "active" && s.endDate && new Date(s.endDate) <= now);
-                  const displayStatus = isExpiredStatus ? "Expired" : (s.status.charAt(0).toUpperCase() + s.status.slice(1));
-                  
-                  return (
-                    <tr key={s._id?.toString?.() || s._id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {s.plan}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        Rs. {Number(s.amount || 0).toLocaleString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {s.startDate ? new Date(s.startDate).toLocaleDateString() : "-"}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {s.endDate ? new Date(s.endDate).toLocaleDateString() : "-"}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            displayStatus === "Active"
-                              ? "bg-green-100 text-green-800"
-                              : displayStatus === "Expired"
-                              ? "bg-gray-100 text-gray-800"
-                              : displayStatus === "Pending"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : "bg-red-100 text-red-800"
-                          }`}
-                        >
-                          {displayStatus}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })
+              {subscriptionHistory.length > 0 ? (
+                subscriptionHistory.map((s) => (
+                  <tr key={s._id?.toString?.() || s._id}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {s.plan}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      Rs. {Number(s.amount || 0).toLocaleString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {s.startDate ? new Date(s.startDate).toLocaleDateString() : "-"}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {s.endDate ? new Date(s.endDate).toLocaleDateString() : "-"}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span
+                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          s.status === "active"
+                            ? "bg-green-100 text-green-800"
+                            : s.status === "pending"
+                            ? "bg-yellow-100 text-yellow-800"
+                            : "bg-red-100 text-red-800"
+                        }`}
+                      >
+                        {s.status || "unknown"}
+                      </span>
+                    </td>
+                  </tr>
+                ))
               ) : (
                 <tr>
                   <td

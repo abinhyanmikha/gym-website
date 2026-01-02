@@ -5,7 +5,27 @@ import { authOptions } from "@/lib/auth";
 import connectDB from "@/lib/mongodb";
 import Subscription from "@/models/Subscription";
 
-export async function GET(request, { params }) {
+// Need to export params to generate static paths at build time
+export async function generateStaticParams() {
+  // Return empty array if you don't want to pre-generate any paths
+  return [];
+}
+
+// Helper function to extract params safely
+async function getParams(request) {
+  try {
+    // For dynamic routes in App Router, we need to extract the ID from the URL
+    const url = new URL(request.url);
+    const pathParts = url.pathname.split("/");
+    const id = pathParts[pathParts.length - 1];
+    return { id };
+  } catch (error) {
+    console.error("Error extracting params:", error);
+    return { id: null };
+  }
+}
+
+export async function GET(request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== "admin") {
@@ -14,7 +34,8 @@ export async function GET(request, { params }) {
 
     await connectDB();
 
-    const { id } = await params;
+    // Extract ID from URL instead of params
+    const { id } = await getParams(request);
 
     if (!id) {
       return NextResponse.json(
@@ -48,7 +69,7 @@ export async function GET(request, { params }) {
   }
 }
 
-export async function PUT(request, { params }) {
+export async function PUT(request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== "admin") {
@@ -57,7 +78,8 @@ export async function PUT(request, { params }) {
 
     await connectDB();
 
-    const { id } = await params;
+    // Extract ID from URL instead of params
+    const { id } = await getParams(request);
 
     if (!id) {
       return NextResponse.json(
@@ -113,7 +135,7 @@ export async function PUT(request, { params }) {
   }
 }
 
-export async function DELETE(request, { params }) {
+export async function DELETE(request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== "admin") {
@@ -122,7 +144,8 @@ export async function DELETE(request, { params }) {
 
     await connectDB();
 
-    const { id } = await params;
+    // Extract ID from URL instead of params
+    const { id } = await getParams(request);
 
     if (!id) {
       return NextResponse.json(

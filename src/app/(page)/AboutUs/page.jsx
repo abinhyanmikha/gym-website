@@ -24,19 +24,7 @@ export default function AboutUs() {
       <div className="relative w-full h-[250px]">
         <Image src="/gym.PNG" alt="About Us" priority fill />
       </div>
-      <div>
-        <h1 className="text-3xl font-bold text-center mb-2 pb-1.5">
-          Welcome to Ajima Physical Fitness
-        </h1>
-        <p className="text-lg text-black-300 mx-auto  font-stretch-condensed">
-          Welcome to Ajima Physical Fitness At <b>Ajima Physical Fitness</b>,
-          we’re passionate about helping you build strength, boost confidence,
-          and live a healthier lifestyle. Located in the heart of Bhaktapur,
-          Nepal, our fitness center is a community-focused space where people of
-          all ages and fitness levels can train, improve, and transform their
-          bodies.
-        </p>
-      </div>
+
       {/* Trainers Section */}
       <section className="w-full p-6">
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-center mt-8">
