@@ -5,6 +5,7 @@ import { connectDB } from "@/lib/mongodb";
 import User from "@/models/User";
 import UserSubscription from "@/models/UserSubscription";
 import Payment from "@/models/Payment";
+import { updateExpiredSubscriptions } from "@/lib/subscriptions";
 
 export async function GET(request) {
   try {
@@ -20,12 +21,16 @@ export async function GET(request) {
     // Connect to MongoDB
     await connectDB();
 
+    // Update any expired subscriptions before calculating stats
+    await updateExpiredSubscriptions();
+
     // Calculate stats from MongoDB
     const totalUsers = await User.countDocuments();
     
-    // Count active subscriptions (user subscriptions that are currently active)
+    // Count active subscriptions (user subscriptions that are currently active and NOT expired)
     const activeSubscriptions = await UserSubscription.countDocuments({ 
-      status: "active" 
+      status: "active",
+      endDate: { $gte: new Date() }
     });
 
     const now = new Date();

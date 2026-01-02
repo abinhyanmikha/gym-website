@@ -10,16 +10,27 @@ import DashboardSection from "@/components/dashboard/DashboardSection";
 import PageHeader from "@/components/dashboard/PageHeader";
 import QuickLinks from "@/components/dashboard/QuickLinks";
 
+import { updateExpiredSubscriptions } from "@/lib/subscriptions";
+
 export default async function UserDashboardPage() {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
   if (session.user.role === "admin") redirect("/dashboard/admin");
 
   await connectDB();
-  const [activeSubscription, paymentHistory] = await Promise.all([
-    UserSubscription.findOne({ userId: session.user.id, status: "active" }).sort({ startDate: -1 }).lean(),
+  
+  // Update any expired subscriptions for this session
+  await updateExpiredSubscriptions();
+
+  const [subscriptions, paymentHistory] = await Promise.all([
+    UserSubscription.find({ userId: session.user.id }).sort({ startDate: -1 }).lean(),
     Payment.find({ userId: session.user.id }).sort({ createdAt: -1 }).limit(5).lean()
   ]);
+
+  const now = new Date();
+  const activeSubscription = subscriptions.find(s => 
+    s.status === "active" && new Date(s.endDate) > now
+  );
 
   const quickLinks = [
     { label: "Home", href: "/", desc: "Return to homepage" },
@@ -59,7 +70,7 @@ export default async function UserDashboardPage() {
               </div>
             )
           } 
-          bgColor="bg-green-50" 
+          bgColor={activeSubscription ? "bg-green-50" : "bg-gray-50"} 
         />
       </div>
 
