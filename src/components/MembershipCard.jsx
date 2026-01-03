@@ -9,7 +9,7 @@ export default function MembershipCard({
   title,
   features,
   price,
-  color,
+
   duration,
   includesCardio,
 }) {
@@ -91,7 +91,7 @@ export default function MembershipCard({
   };
 
   return (
-    <div className={`bg-white rounded-lg shadow-md p-6 border-t-4 ${color}`}>
+    <div className={`bg-white rounded-lg shadow-md p-6 border-4 flex flex-col h-full`}>
       <h2 className="text-xl font-bold mb-2">{title}</h2>
       <p className="text-2xl font-semibold mb-1">Rs. {price}</p>
       <p className="text-gray-600 mb-2">{duration}</p>
@@ -112,7 +112,7 @@ export default function MembershipCard({
 
       <button
         onClick={handleEsewaPay}
-        className="mt-6 w-full bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded"
+        className="mt-auto w-full bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded"
       >
         Choose Plan
       </button>
