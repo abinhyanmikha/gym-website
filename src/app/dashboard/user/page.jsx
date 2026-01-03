@@ -187,5 +187,5 @@ export default async function UserDashboardPage() {
         </div>
       </div>
     </div>
-  );
+   );
 }
