@@ -1,1 +1,10 @@
 @import "tailwindcss";
+
+*{
+   
+  font-family: 'San Francisco', sans-serif;
+
+}
+ul{
+  list-style-type: disc;
+}
