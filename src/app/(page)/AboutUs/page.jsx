@@ -43,14 +43,6 @@ export default function AboutUs() {
         <li>To create a community where fitness is enjoyed and celebrated</li>
         <li>Whether you’re aiming to gain muscle, improve endurance, or enhance overall wellbeing, we provide the tools and support you need to succeed.</li>
       </ul>
-      
-      
-
-
-
-
-
-
      </div>
 
 
