@@ -36,7 +36,6 @@ export default function Home() {
     <div className="min-h-screen">
       <Navbar />
 
-      {/* Hero Section */}
       <section className="relative h-screen flex items-center justify-center text-white pt-16">
         <div className="absolute inset-0 z-0">
           <Image

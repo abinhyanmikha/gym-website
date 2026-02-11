@@ -18,7 +18,7 @@ export default function LoginPage() {
       redirect: false,
     });
     if (res.ok) {
-      // Redirect to dashboard - the dashboard page will handle role-based redirection
+      // Redirect to dashboard
       router.push("/dashboard");
     } else {
       setError("Invalid email or password");
